@@ -1,4 +1,6 @@
-﻿namespace BilibiliMonitor.Models
+﻿using Newtonsoft.Json.Linq;
+
+namespace BilibiliMonitor.Models
 {
     public class LiveStreamsModel
     {
@@ -8,11 +10,7 @@
             public int code { get; set; }
             public string msg { get; set; }
             public string message { get; set; }
-            public Data data { get; set; }
-        }
-
-        public class Data
-        {
+            public JObject data { get; set; }
         }
 
         public class RoomInfo

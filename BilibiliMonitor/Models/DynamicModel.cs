@@ -2,6 +2,7 @@
 {
     public class DynamicModel
     {
+
         public class Main
         {
             public int code { get; set; }
@@ -60,7 +61,7 @@
             public Decorate decorate { get; set; }
             public string face { get; set; }
             public bool face_nft { get; set; }
-            public bool following { get; set; }
+            public object following { get; set; }
             public string jump_url { get; set; }
             public string label { get; set; }
             public int mid { get; set; }
