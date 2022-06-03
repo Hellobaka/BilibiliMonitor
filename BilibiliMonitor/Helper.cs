@@ -1,8 +1,18 @@
 ﻿using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Path = System.IO.Path;
 
 namespace BilibiliMonitor
 {
@@ -20,6 +30,37 @@ namespace BilibiliMonitor
             using var http = new HttpClient();
             var r = await http.PostAsync(url, new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json"));
             return await r.Content.ReadAsStringAsync();
+        }
+        /// <summary>
+        /// 下载文件
+        /// </summary>
+        /// <param name="url">网址</param>
+        /// <param name="path">目标文件夹</param>
+        /// <param name="overwrite">重复时是否覆写</param>
+        /// <returns></returns>
+        public static async Task<bool> DownloadFile(string url, string path, bool overwrite = false)
+        {
+            using var http = new HttpClient();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(url)) return false;
+                string fileName = GetFileNameFromURL(url);
+                if (overwrite && File.Exists(Path.Combine(path, fileName))) return true;
+                var r = await http.GetAsync(url);
+                byte[] buffer = await r.Content.ReadAsByteArrayAsync();
+                Directory.CreateDirectory(path);
+                File.WriteAllBytes(Path.Combine(path, fileName), buffer);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return false;
+            }
+        }
+        public static string GetFileNameFromURL(this string url)
+        {
+            return url.Split('/').Last();
         }
         public static bool CompareNumString(string a, string b)
         {
