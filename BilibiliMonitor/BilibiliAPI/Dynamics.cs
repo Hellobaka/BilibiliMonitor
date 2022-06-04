@@ -20,9 +20,12 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
         public int UID { get; set; }
         public string LastDynamicID { get; set; }
+        private static string FanNumFontPath { get; set; } = @"E:\编程\程序c#\BilibiliMonitor\BilibiliMonitor\bin\Debug\net5.0\a.ttf";
+        private static FontFamily EmojiFont { get; set; }
         public Dynamics(int uid)
         {
             UID = uid;
+            EmojiFont = new FontCollection().Add(@"C:\Windows\Fonts\seguiemj.ttf");
         }
         public List<DynamicModel.Item> DynamicList { get; set; } = new();
         /// <summary>
@@ -33,7 +36,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string url = string.Format(BaseUrl, UID);
             // string text = Helper.Get(url).Result;
-            string text = File.ReadAllText(@"E:\DO\5050.json");
+            string text = File.ReadAllText(@"E:\DO\dynamic.json");
             var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
             if (json.code == 0)
             {
@@ -119,10 +122,10 @@ namespace BilibiliMonitor.BilibiliAPI
             DynamicModel.Item item = DynamicList.First(x => x.id_str == id);
             if (item == null) return;
 
-            using Image<Rgba32> background = new(652, (int)CalcMaxHeight(item), new Rgba32(244, 245, 247));
-            IPath card = new RectangularPolygon(padding, padding, background.Width - padding * 2, background.Height - padding * 2);
-            background.Mutate(x => x.Fill(Color.White, card));
-            int left = 88;
+            using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
+            using Image<Rgba32> background = new(632, 30000, Color.White);
+
+            int left = 78;
             //头像
             Size avatarSize = new(48);
             using Image avatar = Image.Load(Path.Combine("tmp", item.modules.module_author.face.GetFileNameFromURL()));
@@ -130,13 +133,13 @@ namespace BilibiliMonitor.BilibiliAPI
             using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
             IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
             avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            background.Mutate(x => x.DrawImage(avatarFrame, new Point(24, 24), 1));
+            background.Mutate(x => x.DrawImage(avatarFrame, new Point(14, 14), 1));
 
             if (!string.IsNullOrWhiteSpace(item.modules.module_author.pendant.image))
             {
                 using Image pendant = Image.Load(Path.Combine("tmp", item.modules.module_author.pendant.image.GetFileNameFromURL()));
                 pendant.Mutate(x => x.Resize(new Size(72, 72)));
-                background.Mutate(x => x.DrawImage(pendant, new Point(12, 12), 1));
+                background.Mutate(x => x.DrawImage(pendant, new Point(2, 2), 1));
             }
             //认证
 
@@ -155,7 +158,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using Image decorate = Image.Load(Path.Combine("tmp", item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
             decorate.Mutate(x => x.Resize(146, 44));
             var fontCollection = new FontCollection();
-            var fanNum = fontCollection.Add(@"E:\编程\程序c#\BilibiliMonitor\BilibiliMonitor\bin\Debug\net5.0\a.ttf");
+            var fanNum = fontCollection.Add(FanNumFontPath);
 
             if (item.modules.module_author.decorate?.fan != null)
             {
@@ -163,21 +166,26 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             background.Mutate(x => x.DrawImage(decorate, new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
             //文本
-            PointF point = new(88, 73);
+            PointF point = new(78, 73);
             background.Mutate(x => RenderRichText(item, x, ref point));
             switch (item.type)
             {
                 case "DYNAMIC_TYPE_DRAW":
-                    point = new(88, point.Y + 30);
+                    point = new(78, point.Y + 30);
                     background.Mutate(x => DrawMajorImage(item.modules.module_dynamic.major.draw, x, ref point));
                     break;
                 case "DYNAMIC_TYPE_AV":
-                    point = new(88, point.Y + 10);
+                    point = new(78, point.Y + 10);
                     background.Mutate(x => DrawVideoElement(item.modules.module_dynamic.major.archive, x, ref point));
                     break;
             }
             background.Mutate(x => DrawInteractive(item.modules.module_interaction, x, ref point));
-            background.Save("1.png");
+            background.Mutate(x => DrawStat(item.modules.module_stat, x, ref point));
+
+            background.Mutate(x => x.Crop(background.Width, (int)point.Y + padding));
+            main.Mutate(x => x.Crop(main.Width, background.Height + padding * 2));
+            main.Mutate(x => x.DrawImage(background, new Point(padding, padding), 1));
+            main.Save("1.png");
         }
         private IImageProcessingContext DrawVideoElement(DynamicModel.Archive item, IImageProcessingContext img, ref PointF point)
         {
@@ -194,7 +202,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
+            int padding = (int)point.X, chargap = 1, maxWidth = 600 - 12;
             float maxCharWidth = 0, charHeight = 0;
             foreach(var c in item.title)
             {
@@ -230,19 +238,59 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
             }
-            point = new Point(88, initialPoint.Y + 127);
+            point = new Point(78, initialPoint.Y + 127);
+            return img;
+        }
+        private IImageProcessingContext DrawStat(DynamicModel.Module_Stat item, IImageProcessingContext img, ref PointF point)
+        {
+            if (item == null) return img;
+            PointF initalPoint = new(point.X, point.Y);
+            point = new(point.X, point.Y + 20);
+            using var forward = Image.Load(Path.Combine("component", "forward.png"));
+            forward.Mutate(x => x.Resize(16, 16));
+            using var comment = Image.Load(Path.Combine("component", "comment.png"));
+            comment.Mutate(x => x.Resize(16, 16));
+            using var like = Image.Load(Path.Combine("component", "like.png"));
+            like.Mutate(x => x.Resize(16, 16));
+
+            img.DrawImage(forward, (Point)point, 1);
+            point = new(point.X + 16 + 4, point.Y);
+            Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
+            TextOptions options = new(font);
+            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
+            float maxCharWidth = 0, charHeight = 0;
+            foreach(var c in item.forward.count.ParseNum2Chinese())
+            {
+                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+            }
+            point = new(point.X + 10, point.Y);
+
+            img.DrawImage(comment, (Point)point, 1);
+            point = new(point.X + 16 + 4, point.Y);
+            foreach(var c in item.comment.count.ParseNum2Chinese())
+            {
+                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+            }
+            point = new(point.X + 10, point.Y);
+
+            img.DrawImage(like, (Point)point, 1);
+            point = new(point.X + 16 + 4, point.Y);
+            foreach(var c in item.like.count.ParseNum2Chinese())
+            {
+                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+            }
+
+            point = new(initalPoint.X, point.Y + 16);
             return img;
         }
         private IImageProcessingContext DrawInteractive(DynamicModel.Module_Interaction item, IImageProcessingContext img, ref PointF point)
         {
-            if (item.items.Length == 0) return img;
+            if (item == null || item.items?.Length == 0) return img;
             PointF initalPoint = new(point.X, point.Y);
-            point = new(88, point.Y + 5);
-            IPath dash = new RectangularPolygon(point.X, point.Y, 2, 21);
-            img.Fill(Rgba32.ParseHex("#e7e7e7"), dash);
-            point = new(point.X + 8, point.Y);
+            point = new(78 + 8, point.Y + 5);
+
             using var comment = Image.Load(Path.Combine("component", "comment.png"));
-            comment.Mutate(x => x.Resize(14, 14));
+            comment.Mutate(x => x.Resize(16, 16));
             img.DrawImage(comment, (Point)point, 1);
             point = new(point.X + 14 + 8, point.Y);
 
@@ -254,13 +302,37 @@ namespace BilibiliMonitor.BilibiliAPI
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             TextOptions options = new(font);
             int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
-            float maxCharWidth = 0, charHeight = 0;
-
-            foreach(var c in text)
+            float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
+            foreach (var node in item.items[0].desc.rich_text_nodes)
             {
-                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+                switch (node.type)
+                {
+                    case "RICH_TEXT_NODE_TYPE_AT":
+                        foreach (var c in node.text)
+                        {
+                            totalHeight = DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
+                        }
+                        break;
+                    case "RICH_TEXT_NODE_TYPE_TEXT":
+                        foreach (var c in node.text)
+                        {
+                            totalHeight = DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
+                        }
+                        break;
+                    case "RICH_TEXT_NODE_TYPE_EMOJI":
+                        var emoji = Image.Load(Path.Combine("tmp", node.emoji.icon_url.GetFileNameFromURL()));
+                        emoji.Mutate(x => x.Resize(new Size(20, 20)));
+                        img.DrawImage(emoji, (Point)point, 1);// ? point
+                        break;                   
+                    default:
+                        break;
+                }
             }
-            point = new(initalPoint.X, initalPoint.Y + 10);
+
+            IPath dash = new RectangularPolygon(initalPoint.X, initalPoint.Y + 5, 2, totalHeight);
+            img.Fill(Rgba32.ParseHex("#e7e7e7"), dash);
+
+            point = new(initalPoint.X, point.Y + 10);
             return img;
         }
         private IImageProcessingContext DrawForward(DynamicModel.Module_Interaction item, IImageProcessingContext img, ref PointF point)
@@ -270,13 +342,15 @@ namespace BilibiliMonitor.BilibiliAPI
         }
         private IImageProcessingContext DrawMajorImage(DynamicModel.Draw item, IImageProcessingContext img, ref PointF point)
         {
+            PointF initalPoint = new(point.X, point.Y);
+
             int picCount = (int)(item?.items.Length);
             if (picCount == 1)
             {
                 var i = item.items[0];
                 using Image image = Image.Load(Path.Combine("tmp", i.src.GetFileNameFromURL()));
                 img.DrawImage(image, (Point)point, 1);
-                point = new(88, point.Y + image.Height);
+                point = new(78, point.Y + image.Height);
             }
             else
             {
@@ -288,7 +362,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         img.DrawImage(tmp, (Point)point, 1);
                         if (index % 2 == 0)
                         {
-                            point = new(88, point.Y + 108);
+                            point = new(78, point.Y + 108);
                         }
                         else
                         {
@@ -300,17 +374,18 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     for (int index = 1; index <= picCount; index++)
                     {
+                        using Image tmp = Image.Load(Path.Combine("tmp", item.items[index - 1].src.GetFileNameFromURL()));
+                        img.DrawImage(tmp, (Point)point, 1);
                         if (index % 3 == 0)
                         {
-                            point = new(88, point.Y + 108);
+                            point = new(78, point.Y + 108);
                         }
                         else
                         {
                             point = new(point.X + 108, point.Y);
                         }
-                        using Image tmp = Image.Load(Path.Combine("tmp", item.items[index - 1].src.GetFileNameFromURL()));
-                        img.DrawImage(tmp, (Point)point, 1);
                     }
+                    point = new(initalPoint.X, point.Y + 108);
                 }
             }
             return img;
@@ -320,7 +395,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if (item == null) return img;
             Font font;
             TextOptions options;
-            int padding = 88, chargap = 1, maxWidth = 532;
+            int padding = 78, chargap = 1, maxWidth = 532;
             float maxCharWidth = 0, charHeight = 0;
             if (item.modules.module_dynamic.topic != null)
             {
@@ -349,6 +424,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         var emoji = Image.Load(Path.Combine("tmp", node.emoji.icon_url.GetFileNameFromURL()));
                         emoji.Mutate(x => x.Resize(new Size(20, 20)));
                         img.DrawImage(emoji, (Point)point, 1);
+                        point = new(point.X + 20, point.Y);
                         break;
                     case "RICH_TEXT_NODE_TYPE_LOTTERY":
                         using (Image gift = Image.Load(Path.Combine("component", "gift.png")))
@@ -378,98 +454,77 @@ namespace BilibiliMonitor.BilibiliAPI
                             DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
                         }
                         break;
+                    case "RICH_TEXT_NODE_TYPE_TOPIC":
+                        font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
+                        options = new(font);
+                        foreach (var c in node.text)
+                        {
+                            DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+                        }
+                        break;
                     default:
                         break;
                 }
             }
             return img;
         }
-        public static void DrawString(IImageProcessingContext img, char text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight)
+        private static string emojiStore = "";
+        public static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
-            var charSize = TextMeasurer.Measure(text.ToString(), option);
+            string target;
+            if(c.JudgeEmoji())
+            {
+                emojiStore += c;
+                return totalHeight;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(emojiStore))
+                {
+                    target = c.ToString();
+                }
+                else
+                {
+                    emojiStore += c;
+                    target = emojiStore;
+                    option = new(EmojiFont.CreateFont(option.Font.Size));
+                }
+                emojiStore = "";
+            }
+            if (string.IsNullOrWhiteSpace(target)) target = c.ToString();
+            return DrawString(img, target, color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
+        }
+        public static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
+        {
+            var charSize = TextMeasurer.Measure(text, option);
             charHeight = Math.Max(charSize.Height, charHeight);
-            if (text == '\n')
+            if (totalHeight == 0) totalHeight = charHeight;
+            if (text == "\n")
             {
                 point.X = padding;
                 point.Y += charHeight + 2;
-                return;
+                totalHeight += charHeight + 2;
+                return totalHeight;
             }
             maxCharWidth = Math.Max(maxCharWidth, charSize.Width);
             var pointClone = new PointF(point.X, point.Y);//在表达式内无法使用ref
             img.DrawText(text.ToString(), option.Font, color, pointClone);
-            WrapTest(maxWidth, padding, charGap, charSize, ref point);
+            totalHeight = WrapTest(maxWidth, padding, charGap, charSize, ref point, totalHeight);
+            return totalHeight;
         }
-        public static void WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point)
+        public static float WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point, float totalHeight)
         {
             if (point.X + charSize.Width >= maxWidth)
             {
                 point.X = padding;
                 point.Y += charSize.Height + 2;
+                totalHeight += charSize.Height + 2;
             }
             else
             {
                 point.X += charSize.Width + charGap;
             }
-        }
-        private float CalcMaxHeight(DynamicModel.Item item)
-        {
-            // header: 73
-            // footer: 48
-            // video: 129
-            // interaction: 21
-            // singal pic: 320
-            // mutli pics: 104
-            float width = 532;
-            float height = 73 + 48;
-            if (item.modules.module_dynamic.desc != null)
-            {
-                Font font = SystemFonts.CreateFont("Microsoft YaHei", 14);
-                TextOptions options = new(font)
-                {
-                    TabWidth = 4,
-                    WrappingLength = width,
-                };
-                var size = TextMeasurer.Measure(item.modules.module_dynamic.desc.text, options);
-                height += size.Height * 2;
-            }
-            if (item.modules.module_dynamic.major != null)
-            {
-                if (item.modules.module_dynamic.major.type == "MAJOR_TYPE_DRAW")
-                {
-                    if (item.modules.module_dynamic.major.draw != null)
-                    {
-                        int picCount = item.modules.module_dynamic.major.draw.items.Length;
-                        if (picCount == 1)
-                        {
-                            var i = item.modules.module_dynamic.major.draw.items[0];
-                            if (i.height / (double)i.width > 2)
-                            {
-                                height += 320;
-                            }
-                            else
-                            {
-                                height += 180;
-                            }
-                        }
-                        else
-                        {
-                            if (picCount <= 9)
-                            {
-                                height += 108 * ((float)Math.Ceiling(picCount / 3.0));
-                            }
-                            else
-                            {
-                                height += 108 * 3;
-                            }
-                        }
-                    }
-                }
-                else if (item.modules.module_dynamic.major.type == "MAJOR_TYPE_ARCHIVE")
-                {
-                    height += 169;
-                }
-            }
-            return height;
+            return totalHeight;
         }
     }
 }
