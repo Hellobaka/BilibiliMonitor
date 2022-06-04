@@ -137,9 +137,14 @@
             public Additional additional { get; set; }
             public Desc desc { get; set; }
             public Major major { get; set; }
-            public object topic { get; set; }
+            public Topic topic { get; set; }
         }
-
+        public class Topic
+        {
+            public int id { get; set; }
+            public string jump_url { get; set; }
+            public string name { get; set; }
+        }
         public class Additional
         {
             public Reserve reserve { get; set; }
@@ -215,7 +220,6 @@
             public Emoji emoji { get; set; }
             public string jump_url { get; set; }
         }
-
         public class Emoji
         {
             public string icon_url { get; set; }
@@ -287,7 +291,7 @@
 
         public class Desc3
         {
-            public Rich_Text_Nodes1[] rich_text_nodes { get; set; }
+            public Rich_Text_Nodes[] rich_text_nodes { get; set; }
             public string text { get; set; }
         }
 
