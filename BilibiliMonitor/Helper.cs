@@ -62,6 +62,14 @@ namespace BilibiliMonitor
         {
             return url.Split('/').Last();
         }
+        public static string ParseNum2Chinese(this int num)
+        {
+            if (num > 10000)
+            {
+                return $"{num / 10000.0:f1}万";
+            }
+            return num.ToString();
+        }
         public static bool CompareNumString(string a, string b)
         {
             if (a.Length != b.Length)
@@ -72,6 +80,10 @@ namespace BilibiliMonitor
                     return a[i] > b[i];
             }
             return false;
+        }
+        public static bool JudgeEmoji(this char c)
+        {
+            return c == '\ud83d';
         }
     }
 }
