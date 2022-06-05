@@ -173,6 +173,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 case "DYNAMIC_TYPE_DRAW":
                     point = new(78, point.Y + 30);
                     background.Mutate(x => DrawMajorImage(item.modules.module_dynamic.major.draw, x, ref point));
+                    background.Mutate(x => DrawAddition(item.modules.module_dynamic.additional, x, ref point));
                     break;
                 case "DYNAMIC_TYPE_AV":
                     point = new(78, point.Y + 10);
@@ -338,6 +339,46 @@ namespace BilibiliMonitor.BilibiliAPI
         private IImageProcessingContext DrawForward(DynamicModel.Module_Interaction item, IImageProcessingContext img, ref PointF point)
         {
 
+            return img;
+        }
+        private IImageProcessingContext DrawAddition(DynamicModel.Additional item, IImageProcessingContext img, ref PointF point)
+        {
+            PointF initalPoint = new(point.X, point.Y);
+            if (item == null) return img;
+
+            Font font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
+            TextOptions options = new(font);
+            int padding = 0, chargap = 1, maxWidth = 470;
+            float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
+            Image<Rgba32> textImg = new(maxWidth, 100, Rgba32.ParseHex("#FFFFFF00"));
+            textImg.Mutate(x =>
+            {
+                PointF point = new(padding, 0);
+                switch (item.type)
+                {
+                    case "ADDITIONAL_TYPE_RESERVE":                        
+                        foreach (var c in item.reserve.title)
+                        {
+                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
+                        }
+                        point = new(padding, point.Y + charHeight);
+                        totalHeight += charHeight;
+                        font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
+                        options = new(font);
+                        foreach (var c in item.reserve.desc1.text)
+                        {
+                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
+                        }
+                        break;
+                }
+            });
+            point = new(initalPoint.X, point.Y + 5);
+            IPath container = new RectangularPolygon(initalPoint.X, initalPoint.Y + 5, 532, totalHeight + 15);
+            img.Fill(new Rgba32(244, 245, 247), container);
+            point = new(point.X + 10, point.Y + 10);
+            img.DrawImage(textImg, (Point)point, 1);
+
+            point = new(initalPoint.X, initalPoint.Y + totalHeight + 10);
             return img;
         }
         private IImageProcessingContext DrawMajorImage(DynamicModel.Draw item, IImageProcessingContext img, ref PointF point)
