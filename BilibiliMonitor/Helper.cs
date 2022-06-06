@@ -19,6 +19,7 @@ namespace BilibiliMonitor
     public static class Helper
     {
         public static long TimeStamp => (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+        public static DateTime TimeStamp2DateTime(long timestamp) => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
         public static async Task<string> Get(string url)
         {
             using var http = new HttpClient();
@@ -83,7 +84,15 @@ namespace BilibiliMonitor
         }
         public static bool JudgeEmoji(this char c)
         {
-            return c == '\ud83d';
+            return c >= 0xD800 && c <= 0xDBFF;
+        }
+        public static Point Copy(this Point p)
+        {
+            return new Point(p.X, p.Y);
+        }
+        public static PointF Copy(this PointF p)
+        {
+            return new PointF(p.X, p.Y);
         }
     }
 }
