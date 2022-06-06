@@ -103,7 +103,7 @@ namespace BilibiliMonitor.BilibiliAPI
                             {
                                 if (i.width > i.height)
                                 {
-                                    webp = "320w_180h_1e_1c" + webp;
+                                    webp = "640w_360h_1e_1c" + webp;
                                 }
                                 else
                                 {
