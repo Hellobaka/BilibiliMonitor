@@ -27,7 +27,7 @@
             public Modules modules { get; set; }
             public string type { get; set; }
             public bool visible { get; set; }
-            public Orig orig { get; set; }
+            public Item orig { get; set; }
         }
 
         public class Basic
@@ -148,6 +148,7 @@
         public class Additional
         {
             public Reserve reserve { get; set; }
+            public Vote vote { get; set; }
             public string type { get; set; }
         }
 
@@ -410,5 +411,11 @@
             public string tips { get; set; }
         }
 
+    }
+
+    public class Vote
+    {
+        public string desc { get; set; }
+        public int end_time { get; set; }
     }
 }
