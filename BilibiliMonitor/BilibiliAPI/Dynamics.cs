@@ -20,12 +20,12 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
         public int UID { get; set; }
         public string LastDynamicID { get; set; }
-        private static string FanNumFontPath { get; set; } = @"E:\编程\程序c#\BilibiliMonitor\BilibiliMonitor\bin\Debug\net5.0\a.ttf";
+        private static string FanNumFontPath { get; set; } = @"E:\编程\程序c#\BilibiliMonitor\BilibiliMonitor\bin\Debug\net5.0\a.ttf";//TODO: 路径排除
         private static FontFamily EmojiFont { get; set; }
         public Dynamics(int uid)
         {
             UID = uid;
-            EmojiFont = new FontCollection().Add(@"C:\Windows\Fonts\seguiemj.ttf");
+            EmojiFont = new FontCollection().Add(@"C:\Windows\Fonts\seguiemj.ttf");//TODO: 路径排除
         }
         public List<DynamicModel.Item> DynamicList { get; set; } = new();
         /// <summary>
@@ -36,7 +36,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string url = string.Format(BaseUrl, UID);
             // string text = Helper.Get(url).Result;
-            string text = File.ReadAllText(@"E:\DO\dy3.json");
+            string text = File.ReadAllText(@"E:\DO\dy3.json");//TODO: 路径排除
             var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
             if (json.code == 0)
             {
@@ -47,10 +47,9 @@ namespace BilibiliMonitor.BilibiliAPI
                     if (!Helper.CompareNumString(LastDynamicID, DynamicList[i].id_str))
                     {
                         LastDynamicID = DynamicList[i].id_str;
-                        //return true;
+                        return true;
                     }
                 }
-                return true;
             }
             else
             {
@@ -58,14 +57,28 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             return false;
         }
+        /// <summary>
+        /// 拉取最新动态的图片
+        /// </summary>
+        /// <returns></returns>
         public bool DownloadPics()
         {
             return DownloadPics(LastDynamicID);
         }
+        /// <summary>
+        /// 指定动态ID拉取图片
+        /// </summary>
+        /// <param name="id">动态ID</param>
+        /// <returns></returns>
         public bool DownloadPics(string id)
         {
             return DownloadPics(DynamicList.First(x => x.id_str == id));
         }
+        /// <summary>
+        /// 拉取指定动态的图片
+        /// </summary>
+        /// <param name="item">动态对象</param>
+        /// <returns></returns>
         public bool DownloadPics(DynamicModel.Item item)
         {
             if (item == null) return false;
@@ -129,20 +142,37 @@ namespace BilibiliMonitor.BilibiliAPI
                 return false;
             }
         }
+        /// <summary>
+        /// 绘制最新动态的图片
+        /// </summary>
         public void DrawImage()
         {
             DrawImage(LastDynamicID);
         }
+        /// <summary>
+        /// 绘制动态ID动态的图片
+        /// </summary>
+        /// <param name="id">动态ID</param>
         public void DrawImage(string id)
         {
-            int padding = 10;
             DynamicModel.Item item = DynamicList.First(x => x.id_str == id);
             if (item == null) return;
+            DrawImage(item);
+        }
+        /// <summary>
+        /// 绘制指定动态的图片
+        /// </summary>
+        /// <param name="item">动态对象</param>
+        public void DrawImage(DynamicModel.Item item)
+        {
+            if (item == null) return;
+            int padding = 10;
 
             using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
             using Image<Rgba32> background = new(632, 30000, Color.White);
 
             int left = 78;
+            //TODO: 提取方法
             //头像
             Size avatarSize = new(48);
             using Image avatar = Image.Load(Path.Combine("tmp", item.modules.module_author.face.GetFileNameFromURL()));
@@ -212,8 +242,11 @@ namespace BilibiliMonitor.BilibiliAPI
             background.Mutate(x => x.Crop(background.Width, (int)point.Y + padding));
             main.Mutate(x => x.Crop(main.Width, background.Height + padding * 2));
             main.Mutate(x => x.DrawImage(background, new Point(padding, padding), 1));
-            main.Save("1.png");
+            main.Save("1.png");//TODO: 路径排除
         }
+        /// <summary>
+        /// 绘制视频元素
+        /// </summary>
         private IImageProcessingContext DrawVideoElement(DynamicModel.Archive item, IImageProcessingContext img, ref PointF point, int startX = 78, int elementWidth = 532)
         {
             Point initialPoint = (Point)point;
@@ -279,6 +312,9 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new Point(startX, initialPoint.Y + 127);
             return img;
         }
+        /// <summary>
+        /// 绘制动态数据
+        /// </summary>
         private IImageProcessingContext DrawStat(DynamicModel.Module_Stat item, IImageProcessingContext img, ref PointF point)
         {
             if (item == null) return img;
@@ -321,6 +357,9 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(initalPoint.X, point.Y + 16);
             return img;
         }
+        /// <summary>
+        /// 绘制热评
+        /// </summary>
         private IImageProcessingContext DrawInteractive(DynamicModel.Module_Interaction item, IImageProcessingContext img, ref PointF point)
         {
             if (item == null || item.items?.Length == 0) return img;
@@ -373,6 +412,9 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(initalPoint.X, point.Y + 10);
             return img;
         }
+        /// <summary>
+        /// 绘制转发
+        /// </summary>
         private IImageProcessingContext DrawForward(DynamicModel.Item item, IImageProcessingContext img, ref PointF point)
         {
             PointF initalPoint = new(point.X, point.Y);
@@ -415,6 +457,9 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(initalPoint.X, initalPoint.Y + p.Y + 10);
             return img;
         }
+        /// <summary>
+        /// 绘制附加元素
+        /// </summary>
         private IImageProcessingContext DrawAddition(DynamicModel.Additional item, IImageProcessingContext img, ref PointF point)
         {
             PointF initalPoint = new(point.X, point.Y);
@@ -469,6 +514,9 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(initalPoint.X, initalPoint.Y + totalHeight + 10);
             return img;
         }
+        /// <summary>
+        /// 绘制图片元素
+        /// </summary>
         private IImageProcessingContext DrawMajorImage(DynamicModel.Draw item, IImageProcessingContext img, ref PointF point, int startX = 78)
         {
             PointF initalPoint = new(point.X, point.Y);
@@ -519,6 +567,9 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             return img;
         }
+        /// <summary>
+        /// 绘制文本
+        /// </summary>
         private IImageProcessingContext RenderRichText(DynamicModel.Item item, IImageProcessingContext img, ref PointF point, int padding = 78)
         {
             PointF initalPoint = new(point.X, point.Y);
@@ -607,7 +658,12 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             return img;
         }
+
         private static string emojiStore = "";
+        /// <summary>
+        /// 分字符绘制，处理emoji
+        /// </summary>
+        /// <returns>总字符高度</returns>
         public static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
             string target;
@@ -633,6 +689,10 @@ namespace BilibiliMonitor.BilibiliAPI
             if (string.IsNullOrWhiteSpace(target)) target = c.ToString();
             return DrawString(img, target, color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
         }
+        /// <summary>
+        /// 文本绘制
+        /// </summary>
+        /// <returns>总字符高度</returns>
         public static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
             if (string.IsNullOrEmpty(text)) return totalHeight;
@@ -660,7 +720,10 @@ namespace BilibiliMonitor.BilibiliAPI
             totalHeight = WrapTest(maxWidth, padding, charGap, charSize, ref point, totalHeight);
             return totalHeight;
         }
-        public static float WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point, float totalHeight)
+        /// <summary>
+        /// 换行
+        /// </summary>
+        private static float WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point, float totalHeight)
         {
             if (point.X + charSize.Width >= maxWidth)
             {
