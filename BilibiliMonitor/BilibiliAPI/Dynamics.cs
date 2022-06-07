@@ -215,14 +215,27 @@ namespace BilibiliMonitor.BilibiliAPI
             string text = $"{item.modules.module_author.pub_time}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
             background.Mutate(x => x.DrawText(text, font, new Rgba32(153, 162, 170), new PointF(left, 27 + 24)));
             //装扮
-            using Image decorate = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
-            decorate.Mutate(x => x.Resize(146, 44));
-            
-            if (item.modules.module_author.decorate?.fan != null && !string.IsNullOrEmpty(item.modules.module_author.decorate.fan.num_str))
+            if(item.modules.module_author.decorate != null)
             {
-                decorate.Mutate(x => x.DrawText(item.modules.module_author.decorate.fan.num_str, FanNumFont.CreateFont(12), Color.ParseHex(item.modules.module_author.decorate.fan.color), new PointF(48, 17)));
+                using Image decorate = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
+                switch (item.modules.module_author.decorate.type)
+                {
+                    case 3:
+                        decorate.Mutate(x => x.Resize(146, 44));
+                        if (item.modules.module_author.decorate?.fan != null)
+                        {
+                            decorate.Mutate(x => x.DrawText(item.modules.module_author.decorate.fan.num_str, FanNumFont.CreateFont(12), Color.ParseHex(item.modules.module_author.decorate.fan.color), new PointF(48, 17)));
+                        }
+                        background.Mutate(x => x.DrawImage(decorate, new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
+                        break;
+                    case 1:
+                        decorate.Mutate(x => x.Resize(60, 34));
+                        background.Mutate(x => x.DrawImage(decorate, new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
+                        break;
+                    default:
+                        break;
+                }
             }
-            background.Mutate(x => x.DrawImage(decorate, new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
             //文本
             PointF point = new(78, 73);
             background.Mutate(x => RenderRichText(item, x, ref point));
