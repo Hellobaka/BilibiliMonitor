@@ -22,6 +22,7 @@ namespace BilibiliMonitor.BilibiliAPI
         public static string BasePath { get; set; } = "";
         public static string PicPath { get; set; } = "";
         public string LastDynamicID { get; set; }
+        public string UserName { get; set; }
         private static FontFamily EmojiFont { get; set; }
         private static FontFamily FanNumFont { get; set; }
         public Dynamics(int uid, string assetPath = "", string picPath = "")
@@ -35,7 +36,7 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 PicPath = picPath;
             }
-            EmojiFont = new FontCollection().Add(Path.Combine(BasePath, "Assets", "seguiemj.ttf"));
+            EmojiFont = new FontCollection().Add(Path.Combine(BasePath, "Assets", "seguiemj.ttf"));            
             FanNumFont = new FontCollection().Add(Path.Combine(BasePath, "Assets", "fannum.ttf"));
         }
         public List<DynamicModel.Item> DynamicList { get; set; } = new();
@@ -52,12 +53,20 @@ namespace BilibiliMonitor.BilibiliAPI
             if (json.code == 0)
             {
                 DynamicList = json.data.items.ToList();
-                if (DynamicList.Count > 0) LastDynamicID = DynamicList[0].id_str;
+                if (DynamicList.Count > 0 && string.IsNullOrEmpty(LastDynamicID))
+                {
+                    LastDynamicID = DynamicList[0].id_str;
+                    if (DynamicList[0].modules.module_author != null)
+                    {
+                        UserName = DynamicList[0].modules.module_author.name;
+                    }
+                }
+                LogHelper.Info("动态检查", $"{UserName}的动态列表拉取成功");
                 for (int i = 1; i < DynamicList.Count; i++)
                 {
                     if (DynamicList[i].type == "DYNAMIC_TYPE_LIVE_RCMD")
                         continue;
-                    if (!Helper.CompareNumString(LastDynamicID, DynamicList[i].id_str))
+                    if (!Helper.CompareNumString(LastDynamicID, DynamicList[i].id_str) && LastDynamicID != DynamicList[i].id_str)
                     {
                         LastDynamicID = DynamicList[i].id_str;
                         return true;
