@@ -10,12 +10,16 @@ namespace BilibiliMonitor
 {
     public class UpdateChecker
     {
+        public static string BasePath { get; set; } = "";
+        public static string PicPath { get; set; } = "";
         public int DynamicCheckCD { get; set; } = 1;
         public List<Dynamics> Dynamics { get; set; } = new();
         public static UpdateChecker Instance { get; private set; }
         public bool Enabled { get; set; } = false;
-        public UpdateChecker()
+        public UpdateChecker(string basePath, string picPath)
         {
+            BasePath = basePath;
+            PicPath = picPath;
             Instance = this;
             new Thread(() =>
             {

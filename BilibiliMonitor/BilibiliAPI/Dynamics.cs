@@ -19,25 +19,15 @@ namespace BilibiliMonitor.BilibiliAPI
     {
         private static string BaseUrl { get; set; } = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
         public int UID { get; set; }
-        public static string BasePath { get; set; } = "";
-        public static string PicPath { get; set; } = "";
         public string LastDynamicID { get; set; }
         public string UserName { get; set; }
         private static FontFamily EmojiFont { get; set; }
         private static FontFamily FanNumFont { get; set; }
-        public Dynamics(int uid, string assetPath = "", string picPath = "")
+        public Dynamics(int uid)
         {
             UID = uid;
-            if(string.IsNullOrWhiteSpace(assetPath) is false)
-            {
-                BasePath = assetPath;
-            }
-            if(string.IsNullOrWhiteSpace(picPath) is false)
-            {
-                PicPath = picPath;
-            }
-            EmojiFont = new FontCollection().Add(Path.Combine(BasePath, "Assets", "seguiemj.ttf"));            
-            FanNumFont = new FontCollection().Add(Path.Combine(BasePath, "Assets", "fannum.ttf"));
+            EmojiFont = new FontCollection().Add(Path.Combine(UpdateChecker.BasePath, "Assets", "seguiemj.ttf"));            
+            FanNumFont = new FontCollection().Add(Path.Combine(UpdateChecker.BasePath, "Assets", "fannum.ttf"));
         }
         public List<DynamicModel.Item> DynamicList { get; set; } = new();
         /// <summary>
@@ -106,18 +96,18 @@ namespace BilibiliMonitor.BilibiliAPI
             if (item == null) return false;
             try
             {
-                _ = Helper.DownloadFile(item.modules.module_author.face, Path.Combine(BasePath, "tmp")).Result;
-                _ = Helper.DownloadFile(item.modules.module_author.vip?.avatar_subscript_url, Path.Combine(BasePath, "tmp")).Result;
-                _ = Helper.DownloadFile(item.modules.module_author.decorate?.card_url, Path.Combine(BasePath, "tmp")).Result;
-                _ = Helper.DownloadFile(item.modules.module_author.pendant?.image, Path.Combine(BasePath, "tmp")).Result;
+                _ = Helper.DownloadFile(item.modules.module_author.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+                _ = Helper.DownloadFile(item.modules.module_author.vip?.avatar_subscript_url, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+                _ = Helper.DownloadFile(item.modules.module_author.decorate?.card_url, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+                _ = Helper.DownloadFile(item.modules.module_author.pendant?.image, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 if (item.modules.module_dynamic.major?.archive != null)
                 {
                     item.modules.module_dynamic.major.archive.cover += "@203w_127h_1c.webp";
-                    _ = Helper.DownloadFile(item.modules.module_dynamic.major.archive.cover, Path.Combine(BasePath, "tmp")).Result;
+                    _ = Helper.DownloadFile(item.modules.module_dynamic.major.archive.cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
                 foreach (var i in item.modules.module_dynamic.desc?.rich_text_nodes)
                 {
-                    _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(BasePath, "tmp")).Result;
+                    _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
                 int picCount = item.modules.module_dynamic.major?.draw?.items.Length ?? 0;
                 if (picCount != 0)
@@ -149,7 +139,7 @@ namespace BilibiliMonitor.BilibiliAPI
                                 webp = "104w_104h_1e_1c" + webp;
                         }
                         i.src += "@" + webp;
-                        _ = Helper.DownloadFile(i.src, Path.Combine(BasePath, "tmp")).Result;
+                        _ = Helper.DownloadFile(i.src, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                     }
                 }
                 if (item.type == "DYNAMIC_TYPE_FORWARD")
@@ -197,7 +187,7 @@ namespace BilibiliMonitor.BilibiliAPI
             //TODO: 提取方法
             //头像
             Size avatarSize = new(48);
-            using Image avatar = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.face.GetFileNameFromURL()));
+            using Image avatar = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.modules.module_author.face.GetFileNameFromURL()));
             avatar.Mutate(x => x.Resize(avatarSize));
             using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
             IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
@@ -206,7 +196,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             if (!string.IsNullOrWhiteSpace(item.modules.module_author.pendant.image))
             {
-                using Image pendant = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.pendant.image.GetFileNameFromURL()));
+                using Image pendant = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.modules.module_author.pendant.image.GetFileNameFromURL()));
                 pendant.Mutate(x => x.Resize(new Size(72, 72)));
                 background.Mutate(x => x.DrawImage(pendant, new Point(2, 2), 1));
             }
@@ -226,7 +216,7 @@ namespace BilibiliMonitor.BilibiliAPI
             //装扮
             if(item.modules.module_author.decorate != null)
             {
-                using Image decorate = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
+                using Image decorate = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
                 switch (item.modules.module_author.decorate.type)
                 {
                     case 3:
@@ -276,7 +266,7 @@ namespace BilibiliMonitor.BilibiliAPI
             main.Mutate(x => x.Crop(main.Width, background.Height + padding * 2));
             main.Mutate(x => x.DrawImage(background, new Point(padding, padding), 1));
 
-            string path = Path.Combine(PicPath, "BiliBiliMonitor", "Dynamic");
+            string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "Dynamic");
             Directory.CreateDirectory(path);
             string filename = $"{item.id_str}.png";
             main.Save(Path.Combine(path, filename));
@@ -291,7 +281,7 @@ namespace BilibiliMonitor.BilibiliAPI
             IPath container = new RectangularPolygon(startX, point.Y, elementWidth, 127);
             img.Fill(Color.White, container);
             img.Draw(Pens.Solid(new Rgba32(229, 233, 239), 1), container);
-            using var cover = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.cover.GetFileNameFromURL()));
+            using var cover = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.cover.GetFileNameFromURL()));
             img.DrawImage(cover, (Point)point, 1);
             container = new RectangularPolygon(startX + 137, point.Y + 8, 58, 18);
             img.Fill(Rgba32.ParseHex(item.badge.bg_color), container);
@@ -435,7 +425,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         }
                         break;
                     case "RICH_TEXT_NODE_TYPE_EMOJI":
-                        var emoji = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), node.emoji.icon_url.GetFileNameFromURL()));
+                        var emoji = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), node.emoji.icon_url.GetFileNameFromURL()));
                         emoji.Mutate(x => x.Resize(new Size(20, 20)));
                         img.DrawImage(emoji, (Point)point, 1);// ? point
                         break;
@@ -460,7 +450,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using Image<Rgba32> main = new(499, 1000, Color.Transparent);
 
             PointF p = new(0, 0);
-            using var avatar = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.modules.module_author.face.GetFileNameFromURL()));
+            using var avatar = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.modules.module_author.face.GetFileNameFromURL()));
             avatar.Mutate(x => x.Resize(new Size(24, 24)));
             IPath circle = new EllipsePolygon(avatar.Width / 2, avatar.Height / 2, avatar.Width / 2);
             using Image<Rgba32> avatarFrame = new(24, 24, new Rgba32(255, 255, 255, 0));
@@ -563,7 +553,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if (picCount == 1)
             {
                 var i = item.items[0];
-                using Image image = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), i.src.GetFileNameFromURL()));
+                using Image image = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), i.src.GetFileNameFromURL()));
                 img.DrawImage(image, (Point)point, 1);
                 point = new(startX, point.Y + image.Height);
             }
@@ -573,7 +563,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     for (int index = 1; index <= picCount; index++)
                     {
-                        using Image tmp = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
+                        using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
                         img.DrawImage(tmp, (Point)point, 1);
                         if (index % 2 == 0)
                         {
@@ -589,7 +579,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     for (int index = 1; index <= picCount; index++)
                     {
-                        using Image tmp = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
+                        using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
                         img.DrawImage(tmp, (Point)point, 1);
                         if (index % 3 == 0)
                         {
@@ -641,7 +631,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         }
                         break;
                     case "RICH_TEXT_NODE_TYPE_EMOJI":
-                        var emoji = Image.Load(Path.Combine(Path.Combine(BasePath, "tmp"), node.emoji.icon_url.GetFileNameFromURL()));
+                        var emoji = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), node.emoji.icon_url.GetFileNameFromURL()));
                         emoji.Mutate(x => x.Resize(new Size(20, 20)));
                         img.DrawImage(emoji, (Point)point, 1);
                         point = new(point.X + 20, point.Y);
