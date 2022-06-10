@@ -277,7 +277,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{item.id_str}.png";
             main.Save(Path.Combine(path, filename));
-            return Path.Combine(path, filename);
+            return Path.Combine("BiliBiliMonitor", "Dynamic", filename);
         }
         /// <summary>
         /// 绘制视频元素
@@ -326,7 +326,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             // stat
             point = new(padding, initialPoint.Y + 109);
-            using var play = Image.Load(Path.Combine("Assets", "play.png"));
+            using var play = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "play.png"));
             play.Mutate(x => x.Resize(14, 14));
             img.DrawImage(play, (Point)point, 1);
             point = new(point.X + 16, initialPoint.Y + 107);
@@ -336,7 +336,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             point = new(point.X + 16, point.Y + 2);
-            using var danmaku = Image.Load(Path.Combine("Assets", "danmaku.png"));
+            using var danmaku = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "danmaku.png"));
             danmaku.Mutate(x => x.Resize(14, 14));
             img.DrawImage(danmaku, (Point)point, 1);
             point = new(point.X + 16, initialPoint.Y + 107);
@@ -355,11 +355,11 @@ namespace BilibiliMonitor.BilibiliAPI
             if (item == null) return img;
             PointF initalPoint = new(point.X, point.Y);
             point = new(point.X, point.Y + 20);
-            using var forward = Image.Load(Path.Combine("Assets", "forward.png"));
+            using var forward = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "forward.png"));
             forward.Mutate(x => x.Resize(16, 16));
-            using var comment = Image.Load(Path.Combine("Assets", "comment.png"));
+            using var comment = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "comment.png"));
             comment.Mutate(x => x.Resize(16, 16));
-            using var like = Image.Load(Path.Combine("Assets", "like.png"));
+            using var like = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "like.png"));
             like.Mutate(x => x.Resize(16, 16));
 
             img.DrawImage(forward, (Point)point, 1);
@@ -401,7 +401,7 @@ namespace BilibiliMonitor.BilibiliAPI
             PointF initalPoint = new(point.X, point.Y);
             point = new(78 + 8, point.Y + 5);
 
-            using var comment = Image.Load(Path.Combine("Assets", "comment.png"));
+            using var comment = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "comment.png"));
             comment.Mutate(x => x.Resize(16, 16));
             img.DrawImage(comment, (Point)point, 1);
             point = new(point.X + 14 + 8, point.Y);
@@ -616,7 +616,7 @@ namespace BilibiliMonitor.BilibiliAPI
             float maxCharWidth = 0, charHeight = 0;
             if (item.modules.module_dynamic.topic != null)
             {
-                using var topic = Image.Load(Path.Combine("Assets", "topic.png"));
+                using var topic = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "topic.png"));
                 topic.Mutate(x => x.Resize(18, 18));
                 img.DrawImage(topic, (Point)point, 1);
                 point = new(point.X + 18, point.Y);
@@ -644,7 +644,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         point = new(point.X + 20, point.Y);
                         break;
                     case "RICH_TEXT_NODE_TYPE_LOTTERY":
-                        using (Image gift = Image.Load(Path.Combine("Assets", "gift.png")))
+                        using (Image gift = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "gift.png")))
                         {
                             gift.Mutate(x => x.Resize(18, 18));
                             img.DrawImage(gift, (Point)point, 1);
@@ -658,7 +658,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         }
                         break;
                     case "RICH_TEXT_NODE_TYPE_WEB":
-                        using (Image url = Image.Load(Path.Combine("Assets", "url.png")))
+                        using (Image url = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "url.png")))
                         {
                             url.Mutate(x => x.Resize(18, 18));
                             img.DrawImage(url, (Point)point, 1);

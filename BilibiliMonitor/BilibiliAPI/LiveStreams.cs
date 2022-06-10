@@ -142,7 +142,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{item.room_id}.png";
             main.Save(Path.Combine(path, filename));
-            return Path.Combine(path, filename);
+            return Path.Combine("BiliBiliMonitor", "LiveStream", filename);
         }
 
         public static void DownloadPics(int uid)
