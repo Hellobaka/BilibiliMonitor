@@ -46,7 +46,7 @@ namespace BilibiliMonitor
             {
                 if (string.IsNullOrWhiteSpace(url)) return false;
                 string fileName = GetFileNameFromURL(url);
-                if (overwrite && File.Exists(Path.Combine(path, fileName))) return true;
+                if (!overwrite && File.Exists(Path.Combine(path, fileName))) return true;
                 var r = await http.GetAsync(url);
                 byte[] buffer = await r.Content.ReadAsByteArrayAsync();
                 Directory.CreateDirectory(path);
