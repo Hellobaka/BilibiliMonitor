@@ -99,12 +99,12 @@ namespace BilibiliMonitor
         {
             LiveStreams.RemoveUID(uid);
         }
-        public List<(int, string)> GetStreamList()
+        public List<(int, string, bool)> GetStreamList()
         {
-            List<(int, string)> ls = new();
+            List<(int, string, bool)> ls = new();
             foreach (var item in LiveStreams.LiveStreamData.Select(x => x.Value))
             {
-                ls.Add((item.uid, item.uname));
+                ls.Add((item.uid, item.uname, item.live_status == 1));
             }
             return ls;
         }
