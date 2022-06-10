@@ -23,6 +23,13 @@ namespace BilibiliMonitor.BilibiliAPI
         public string UserName { get; set; }
         private static FontFamily EmojiFont { get; set; }
         private static FontFamily FanNumFont { get; set; }
+        public DynamicModel.Item LatestDynamic
+        {
+            get
+            {
+                return DynamicList.Find(x => x.id_str == LastDynamicID);
+            }
+        }
         public Dynamics(int uid)
         {
             UID = uid;
