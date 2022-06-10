@@ -56,10 +56,10 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         if (t.live_status != LiveStreamData[item].live_status)
                         {
-                            update.Add(item);
                             var room = LiveStreamData[item];
                             if (room.live_status == 1)
-                            {
+                            {                            
+                                update.Add(item);
                                 LogHelper.Info("直播状态变更", $"开播了，{room.uname} - {room.title}");
                             }
                         }
