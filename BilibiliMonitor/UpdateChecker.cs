@@ -37,27 +37,41 @@ namespace BilibiliMonitor
                         {
                             foreach (var dy in Dynamics)
                             {
-                                if (dy.FetchDynamicList())
+                                try
                                 {
-                                    dy.DownloadPics();
-                                    string pic = dy.DrawImage();
-                                    if (string.IsNullOrEmpty(pic) == false)
+                                    if (dy.FetchDynamicList())
                                     {
-                                        OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
-                                        LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                        dy.DownloadPics();
+                                        string pic = dy.DrawImage();
+                                        if (string.IsNullOrEmpty(pic) == false)
+                                        {
+                                            OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
+                                            LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                        }
                                     }
+                                }
+                                catch (Exception e)
+                                {
+                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                 }
                             }
 
                             foreach (var uid in LiveStreams.FetchLiveStream())
                             {
-                                LiveStreams.DownloadPics(uid);
-                                string pic = LiveStreams.DrawLiveStreamPic(uid);
-                                if (string.IsNullOrEmpty(pic) == false)
+                                try
                                 {
-                                    var info = LiveStreams.LiveStreamData[uid];
-                                    OnStream?.Invoke(info, pic);
-                                    LogHelper.Info("开播", $"{info.uname}开播了，路径={pic}");
+                                    LiveStreams.DownloadPics(uid);
+                                    string pic = LiveStreams.DrawLiveStreamPic(uid);
+                                    if (string.IsNullOrEmpty(pic) == false)
+                                    {
+                                        var info = LiveStreams.LiveStreamData[uid];
+                                        OnStream?.Invoke(info, pic);
+                                        LogHelper.Info("开播", $"{info.uname}开播了，路径={pic}");
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                 }
                             }
                         }
