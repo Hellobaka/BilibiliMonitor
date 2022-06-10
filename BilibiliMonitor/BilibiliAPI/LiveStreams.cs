@@ -43,6 +43,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// <returns>有状态更新的用户</returns>
         public static List<int> FetchLiveStream(List<int> uids)
         {
+            if (uids == null || uids.Count == 0) return new();
             string text = Helper.Post(BaseURL, new {uids}).Result;
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.Main>(text);
             List<int> update = new();
