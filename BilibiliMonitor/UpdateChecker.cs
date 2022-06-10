@@ -18,7 +18,7 @@ namespace BilibiliMonitor
         public bool Enabled { get; set; } = false;
         public List<Dynamics> Dynamics { get; set; } = new();
 
-        public delegate void DynamicUpdateHandler(DynamicModel.Item item, string picPath);
+        public delegate void DynamicUpdateHandler(DynamicModel.Item item, int id, string picPath);
         public event DynamicUpdateHandler OnDynamic;
         public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo item, string picPath);
         public event StreamOpenHandler OnStream;
@@ -33,33 +33,40 @@ namespace BilibiliMonitor
                 {
                     if (Enabled)
                     {
-                        foreach (var dy in Dynamics)
+                        try
                         {
-                            if (dy.FetchDynamicList())
+                            foreach (var dy in Dynamics)
                             {
-                                dy.DownloadPics();
-                                string pic = dy.DrawImage();
-                                if(string.IsNullOrEmpty(pic) == false)
+                                if (dy.FetchDynamicList())
                                 {
-                                    OnDynamic?.Invoke(dy.LatestDynamic, pic);
-                                    LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                    dy.DownloadPics();
+                                    string pic = dy.DrawImage();
+                                    if (string.IsNullOrEmpty(pic) == false)
+                                    {
+                                        OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
+                                        LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                    }
+                                }
+                            }
+
+                            foreach (var uid in LiveStreams.FetchLiveStream())
+                            {
+                                LiveStreams.DownloadPics(uid);
+                                string pic = LiveStreams.DrawLiveStreamPic(uid);
+                                if (string.IsNullOrEmpty(pic) == false)
+                                {
+                                    var info = LiveStreams.LiveStreamData[uid];
+                                    OnStream?.Invoke(info, pic);
+                                    LogHelper.Info("开播", $"{info.uname}开播了，路径={pic}");
                                 }
                             }
                         }
-
-                        foreach (var uid in LiveStreams.FetchLiveStream())
+                        catch (Exception e)
                         {
-                            LiveStreams.DownloadPics(uid);
-                            string pic = LiveStreams.DrawLiveStreamPic(uid);
-                            if (string.IsNullOrEmpty(pic) == false)
-                            {
-                                var info = LiveStreams.LiveStreamData[uid];
-                                OnStream?.Invoke(info, pic);
-                                LogHelper.Info("开播", $"{info.uname}开播了，路径={pic}");
-                            }
+                            LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                         }
+                        Thread.Sleep(DynamicCheckCD * 60 * 1000);
                     }
-                    Thread.Sleep(DynamicCheckCD * 60 * 1000);
                 }
             }).Start();
         }
@@ -91,6 +98,24 @@ namespace BilibiliMonitor
         public void RemoveStream(int uid)
         {
             LiveStreams.RemoveUID(uid);
+        }
+        public List<(int, string)> GetStreamList()
+        {
+            List<(int, string)> ls = new();
+            foreach (var item in LiveStreams.LiveStreamData.Select(x => x.Value))
+            {
+                ls.Add((item.uid, item.uname));
+            }
+            return ls;
+        }
+        public List<(int, string)> GetDynamicList()
+        {
+            List<(int, string)> ls = new();
+            foreach (var item in Dynamics)
+            {
+                ls.Add((item.UID, item.UserName));
+            }
+            return ls;
         }
         public void Start()
         {
