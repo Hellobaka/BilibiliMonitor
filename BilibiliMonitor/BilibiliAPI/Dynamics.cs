@@ -588,7 +588,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
                         img.DrawImage(tmp, (Point)point, 1);
-                        if (index % 3 == 0)
+                        if (index % 3 == 0 && index != picCount)
                         {
                             point = new(startX, point.Y + 108);
                         }
