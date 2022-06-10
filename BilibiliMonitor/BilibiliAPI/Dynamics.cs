@@ -302,7 +302,7 @@ namespace BilibiliMonitor.BilibiliAPI
             float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 42)
             {
-                item.title = item.title[..40] + "..";
+                item.title = item.title.Substring(0, 40) + "..";
             }
             foreach (var c in item.title)
             {
@@ -311,12 +311,12 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(padding, point.Y + charHeight + 5);
             if (item.desc.Length > 44)
             {
-                item.desc = item.desc[..44] + "..";
+                item.desc = item.desc.Substring(0, 44) + "..";
             }
             if (item.desc.Count(x => x == '\n') >= 2)
             {
                 int first = item.desc.IndexOf('\n');
-                item.desc = item.desc[..item.desc.IndexOf('\n', first + 1)] + "..";
+                item.desc = item.desc.Substring(0, item.desc.IndexOf('\n', first + 1)) + "..";
             }
             font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             options = new(font);
