@@ -19,7 +19,7 @@ namespace BilibiliMonitor
     public static class Helper
     {
         public static long TimeStamp => (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-        public static DateTime TimeStamp2DateTime(long timestamp) => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
+        public static DateTime TimeStamp2DateTime(long timestamp) => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local).AddSeconds(timestamp);
         public static async Task<string> Get(string url)
         {
             using var http = new HttpClient();
