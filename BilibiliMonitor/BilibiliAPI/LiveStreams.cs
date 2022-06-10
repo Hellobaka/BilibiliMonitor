@@ -32,6 +32,10 @@ namespace BilibiliMonitor.BilibiliAPI
             LiveStreamData.Remove(uid);
         }
 
+        public static List<int> FetchLiveStream()
+        {
+            return FetchLiveStream(LiveStreamData.Keys.ToList());
+        }
         /// <summary>
         /// 根据传入的UID来更新直播列表
         /// </summary>
@@ -65,6 +69,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         LiveStreamData.Add(item, t);
                     }
+                    LogHelper.Info("直播检查", $"{t.uname}直播状态更新成功");
                 }
             }
             else
@@ -127,7 +132,7 @@ namespace BilibiliMonitor.BilibiliAPI
             option = new TextOptions(smallFont);
             size = TextMeasurer.Measure(item.area_v2_name, option);
             point = new(point.X + size.Width, point.Y);
-            Info.Mutate(x=>x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x=>x.DrawText($" · {Helper.TimeStamp2DateTime(item.live_time):G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
 
             point = new(cover.Width + 10 ,10);
             main.Mutate(x=>x.DrawImage(Info, (Point) point, 1));
