@@ -14,8 +14,10 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void FetchDynamicListTest()
         {
-            Dynamics dy = new(692283831);
+            Dynamics dy = new(433351);
             dy.FetchDynamicList();
+            dy.DownloadPics();
+            dy.DrawImage();
             Console.WriteLine(dy.LastDynamicID);
         }
     }
