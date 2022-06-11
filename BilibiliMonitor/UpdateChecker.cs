@@ -84,15 +84,16 @@ namespace BilibiliMonitor
                 }
             }).Start();
         }
-        public void AddDynamic(int uid)
+        public Dynamics AddDynamic(int uid)
         {
             if (Dynamics.Any(x => x.UID == uid))
             {
-                return;
+                return null;
             }
             var dy = new Dynamics(uid);
             dy.FetchDynamicList();
             Dynamics.Add(dy);
+            return dy;
         }
 
         public void RemoveDynamic(int uid)
@@ -104,9 +105,9 @@ namespace BilibiliMonitor
 
             Dynamics.Remove(Dynamics.First(x => x.UID == uid));
         }
-        public void AddStream(int uid)
+        public LiveStreamsModel.RoomInfo AddStream(int uid)
         {
-            LiveStreams.AddUID(uid);
+            return LiveStreams.AddUID(uid);
         }
 
         public void RemoveStream(int uid)
