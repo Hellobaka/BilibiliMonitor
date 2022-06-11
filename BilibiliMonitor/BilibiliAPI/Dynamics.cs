@@ -691,6 +691,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         break;
                 }
             }
+            point = new(initalPoint.X, point.Y + 20);
             return img;
         }
 
