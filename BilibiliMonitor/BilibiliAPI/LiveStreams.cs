@@ -22,9 +22,10 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseURL = "http://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids";
         public static Dictionary<int, LiveStreamsModel.RoomInfo> LiveStreamData { get; set; } = new();
 
-        public static void AddUID(int uid)
+        public static LiveStreamsModel.RoomInfo AddUID(int uid)
         {
             FetchLiveStream(new List<int> {uid});
+            return LiveStreamData[uid];
         }
 
         public static void RemoveUID(int uid)
@@ -57,7 +58,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         if (t.live_status != LiveStreamData[item].live_status)
                         {
                             var room = LiveStreamData[item];
-                            if (room.live_status == 1)
+                            if (t.live_status == 1)
                             {                            
                                 update.Add(item);
                                 LogHelper.Info("直播状态变更", $"开播了，{room.uname} - {room.title}");
