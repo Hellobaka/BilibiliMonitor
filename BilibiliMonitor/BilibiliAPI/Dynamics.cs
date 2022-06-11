@@ -218,7 +218,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             background.Mutate(x => x.DrawText(item.modules.module_author.name, font, nameColor, new PointF(left, 27)));
             font = SystemFonts.CreateFont("Microsoft YaHei", 12);
-            string text = $"{item.modules.module_author.pub_time}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
+            string text = $"{Helper.TimeStamp2DateTime(item.modules.module_author.pub_ts):G}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
             background.Mutate(x => x.DrawText(text, font, new Rgba32(153, 162, 170), new PointF(left, 27 + 24)));
             //装扮
             if(item.modules.module_author.decorate != null)
