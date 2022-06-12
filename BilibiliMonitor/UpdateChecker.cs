@@ -132,6 +132,24 @@ namespace BilibiliMonitor
             }
             return ls;
         }
+        public Dynamics GetDynamic(int uid)
+        {
+            foreach (var item in Dynamics)
+            {
+                if(item.UID == uid)
+                    return item;
+            }
+            return null;
+        }
+        public LiveStreamsModel.RoomInfo GetLiveStream(int uid)
+        {
+            foreach (var item in LiveStreams.LiveStreamData.Select(x => x.Value))
+            {
+                if(item.uid == uid)
+                    return item;
+            }
+            return null;
+        }
         public void Start()
         {
             Enabled = true;
