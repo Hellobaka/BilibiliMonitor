@@ -17,10 +17,11 @@ namespace BilibiliMonitor
         public static UpdateChecker Instance { get; private set; }
         public bool Enabled { get; set; } = false;
         public List<Dynamics> Dynamics { get; set; } = new();
+        public List<LiveStreams> LiveStreams { get; set; } = new();
 
         public delegate void DynamicUpdateHandler(DynamicModel.Item item, int id, string picPath);
         public event DynamicUpdateHandler OnDynamic;
-        public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo item, string picPath);
+        public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo roomInfo, LiveStreamsModel.UserInfo userInfo, string picPath);
         public event StreamOpenHandler OnStream;
         public UpdateChecker(string basePath, string picPath)
         {
@@ -56,17 +57,19 @@ namespace BilibiliMonitor
                                 }
                             }
 
-                            foreach (var uid in LiveStreams.FetchLiveStream())
+                            foreach (var live in LiveStreams)
                             {
                                 try
                                 {
-                                    LiveStreams.DownloadPics(uid);
-                                    string pic = LiveStreams.DrawLiveStreamPic(uid);
-                                    if (string.IsNullOrEmpty(pic) == false)
+                                    if(live.FetchRoomInfo())
                                     {
-                                        var info = LiveStreams.LiveStreamData[uid];
-                                        OnStream?.Invoke(info, pic);
-                                        LogHelper.Info("开播", $"{info.uname}开播了，路径={pic}");
+                                        live.DownloadPics();
+                                        string pic = live.DrawLiveStreamPic();
+                                        if (string.IsNullOrEmpty(pic) == false)
+                                        {
+                                            OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
+                                            LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
+                                        }
                                     }
                                 }
                                 catch (Exception e)
@@ -98,28 +101,40 @@ namespace BilibiliMonitor
 
         public void RemoveDynamic(int uid)
         {
-            if (Dynamics.Any(x => x.UID == uid))
+            if (!Dynamics.Any(x => x.UID == uid))
             {
                 return;
             }
 
             Dynamics.Remove(Dynamics.First(x => x.UID == uid));
         }
-        public LiveStreamsModel.RoomInfo AddStream(int uid)
+        public LiveStreams AddStream(int uid)
         {
-            return LiveStreams.AddUID(uid);
+            if (LiveStreams.Any(x => x.UID == uid))
+            {
+                return null;
+            }
+            var live = new LiveStreams(uid);
+            live.FetchRoomInfo();
+            LiveStreams.Add(live);
+            return live;
         }
 
         public void RemoveStream(int uid)
         {
-            LiveStreams.RemoveUID(uid);
+            if (!LiveStreams.Any(x => x.UID == uid))
+            {
+                return;
+            }
+
+            LiveStreams.Remove(LiveStreams.First(x => x.UID == uid));
         }
         public List<(int, string, bool)> GetStreamList()
         {
             List<(int, string, bool)> ls = new();
-            foreach (var item in LiveStreams.LiveStreamData.Select(x => x.Value))
+            foreach (var item in LiveStreams)
             {
-                ls.Add((item.uid, item.uname, item.live_status == 1));
+                ls.Add((item.UID, item.Name, item.Streaming));
             }
             return ls;
         }
@@ -137,15 +152,6 @@ namespace BilibiliMonitor
             foreach (var item in Dynamics)
             {
                 if(item.UID == uid)
-                    return item;
-            }
-            return null;
-        }
-        public LiveStreamsModel.RoomInfo GetLiveStream(int uid)
-        {
-            foreach (var item in LiveStreams.LiveStreamData.Select(x => x.Value))
-            {
-                if(item.uid == uid)
                     return item;
             }
             return null;

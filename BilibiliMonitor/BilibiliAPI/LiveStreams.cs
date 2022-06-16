@@ -41,7 +41,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 UserInfo = json.data;
             }            
         }
-        public bool FetchLiveStream()
+        public bool FetchRoomInfo()
         {
             string text = Helper.Get(BaseRoomInfoURL + UID).Result;
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
