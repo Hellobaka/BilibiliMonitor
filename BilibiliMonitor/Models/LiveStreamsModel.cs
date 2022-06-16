@@ -4,7 +4,63 @@ namespace BilibiliMonitor.Models
 {
     public class LiveStreamsModel
     {
-        public class Main
+        public class UserInfo_Main
+        {
+            public int code { get; set; }
+            public string msg { get; set; }
+            public string message { get; set; }
+            public UserInfo data { get; set; }
+        }
+
+        public class UserInfo
+        {
+            public Info info { get; set; }
+            public Exp exp { get; set; }
+            public int follower_num { get; set; }
+            public int room_id { get; set; }
+            public string medal_name { get; set; }
+            public int glory_count { get; set; }
+            public string pendant { get; set; }
+            public int link_group_num { get; set; }
+            public Room_News room_news { get; set; }
+        }
+
+        public class Info
+        {
+            public int uid { get; set; }
+            public string uname { get; set; }
+            public string face { get; set; }
+            public Official_Verify official_verify { get; set; }
+            public int gender { get; set; }
+        }
+
+        public class Official_Verify
+        {
+            public int type { get; set; }
+            public string desc { get; set; }
+        }
+
+        public class Exp
+        {
+            public Master_Level master_level { get; set; }
+        }
+
+        public class Master_Level
+        {
+            public int level { get; set; }
+            public int color { get; set; }
+            public int[] current { get; set; }
+            public int[] next { get; set; }
+        }
+
+        public class Room_News
+        {
+            public string content { get; set; }
+            public string ctime { get; set; }
+            public string ctime_text { get; set; }
+        }
+
+        public class RoomInfo_Main
         {
             public int code { get; set; }
             public string msg { get; set; }
