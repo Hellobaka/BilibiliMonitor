@@ -60,6 +60,7 @@ namespace BilibiliMonitor.Models
             public string ctime_text { get; set; }
         }
 
+
         public class RoomInfo_Main
         {
             public int code { get; set; }
@@ -67,6 +68,7 @@ namespace BilibiliMonitor.Models
             public string message { get; set; }
             public RoomInfo data { get; set; }
         }
+
         public class RoomInfo
         {
             public int uid { get; set; }
@@ -107,6 +109,7 @@ namespace BilibiliMonitor.Models
             public int allow_upload_cover_time { get; set; }
             public Studio_Info studio_info { get; set; }
         }
+
         public class New_Pendants
         {
             public Frame frame { get; set; }
@@ -114,6 +117,7 @@ namespace BilibiliMonitor.Models
             public Mobile_Frame mobile_frame { get; set; }
             public object mobile_badge { get; set; }
         }
+
         public class Frame
         {
             public string name { get; set; }
@@ -126,6 +130,7 @@ namespace BilibiliMonitor.Models
             public string bg_pic { get; set; }
             public bool use_old_area { get; set; }
         }
+
         public class Badge
         {
             public string name { get; set; }
@@ -133,6 +138,7 @@ namespace BilibiliMonitor.Models
             public string value { get; set; }
             public string desc { get; set; }
         }
+
         public class Mobile_Frame
         {
             public string name { get; set; }
@@ -145,10 +151,12 @@ namespace BilibiliMonitor.Models
             public string bg_pic { get; set; }
             public bool use_old_area { get; set; }
         }
+
         public class Studio_Info
         {
             public int status { get; set; }
             public object[] master_list { get; set; }
         }
+
     }
 }

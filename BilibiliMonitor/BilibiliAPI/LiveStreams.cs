@@ -43,16 +43,16 @@ namespace BilibiliMonitor.BilibiliAPI
         }
         public bool FetchRoomInfo()
         {
-            string text = Helper.Get(BaseRoomInfoURL + UID).Result;
+            string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
             if (json.code == 0)
             {
+                RoomInfo = json.data;
                 if (json.data.live_status != StreamingStatus)
                 {
                     StreamingStatus = json.data.live_status;
                     if (Streaming)
                     {
-                        RoomInfo = json.data;
                         LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
                         return true;
                     }                    
