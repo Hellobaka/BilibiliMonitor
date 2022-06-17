@@ -38,8 +38,8 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 BangumiInfo = json;
                 Name = json.result.title;
-                LastID = Convert.ToInt32(json.result.episodes.First().episode_id);
-                LastEp = json.result.episodes.First();
+                LastEp = json.result.episodes.FirstOrDefault(x=>x.episode_id == LastID.ToString());
+
                 LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
                 return true;
             }
@@ -54,11 +54,13 @@ namespace BilibiliMonitor.BilibiliAPI
             if(json.code == 0)
             {
                 LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
+                bool flag = LastID == 0;
                 if (json.result.main_section.episodes.Last().id != LastID)
                 {
-                    LogHelper.Info("更新番剧信息", "新的剧集出现了");
+                    LogHelper.Info("更新番剧信息", "新的剧集出现了");                    
                     LastID = json.result.main_section.episodes.Last().id;
                     FetchInfo();
+                    if (flag) return false;// 初始化
                     return true;
                 }
                 return false;
