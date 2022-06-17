@@ -18,7 +18,7 @@ namespace BilibiliMonitor.BilibiliAPI
 {
     public class Bangumi
     {
-        string baseInfoURL = "http://api.bilibili.com/pgc/view/web/season?season_id=";
+        string baseInfoURL = "https://www.biliplus.com/api/bangumi?season=";
         string baseEpURL = "https://api.bilibili.com/pgc/web/season/section?season_id=";
         public int SeasonID { get; set; }
         public string Name { get; set; }
@@ -34,12 +34,12 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string text = Helper.Get(baseInfoURL + SeasonID).Result;
             var json = JsonConvert.DeserializeObject<BangumiModel.DetailInfo>(text);
-            if (json.code == 0)
+            if (json != null && json.code == 0)
             {
                 BangumiInfo = json;
-                Name = json.result.season_title;
-                LastID = json.result.episodes.Last().id;
-                LastEp = json.result.episodes.Last();
+                Name = json.result.title;
+                LastID = Convert.ToInt32(json.result.episodes.First().episode_id);
+                LastEp = json.result.episodes.First();
                 LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
                 return true;
             }
@@ -53,7 +53,8 @@ namespace BilibiliMonitor.BilibiliAPI
             var json = JsonConvert.DeserializeObject<BangumiModel.Main>(text);
             if(json.code == 0)
             {
-                if(json.result.main_section.episodes.Last().id != LastID)
+                LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
+                if (json.result.main_section.episodes.Last().id != LastID)
                 {
                     LogHelper.Info("更新番剧信息", "新的剧集出现了");
                     LastID = json.result.main_section.episodes.Last().id;
@@ -69,7 +70,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (BangumiInfo == null) return;
             _ = Helper.DownloadFile(LastEp.cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-            _ = Helper.DownloadFile(BangumiInfo.result.square_cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            _ = Helper.DownloadFile(BangumiInfo.result.squareCover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
         }
         public string DrawLastEpPic()
         {
@@ -77,7 +78,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             using Image<Rgba32> main = new(652, 198, Color.White);
             using Image avatar =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", BangumiInfo.result.square_cover.GetFileNameFromURL()));
+                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", BangumiInfo.result.squareCover.GetFileNameFromURL()));
             using Image cover =
                 Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", LastEp.cover.GetFileNameFromURL()));
 
@@ -108,21 +109,21 @@ namespace BilibiliMonitor.BilibiliAPI
                 WrappingLength = Info.Width,
                 Origin = point
             };
-            Info.Mutate(x => x.DrawText(option, LastEp.long_title, Color.Black));
+            Info.Mutate(x => x.DrawText(option, LastEp.index_title, Color.Black));
             point = new(10, 178 - 20);
-            string epCount = $"第{LastEp.title}话";
+            string epCount = $"第{LastEp.index}话";
             Info.Mutate(x => x.DrawText(epCount, smallFont, Rgba32.ParseHex("#99a2aa"), point));
             option = new TextOptions(smallFont);
             size = TextMeasurer.Measure(epCount, option);
             point = new(point.X + size.Width, point.Y);
-            Info.Mutate(x => x.DrawText($" · {Helper.TimeStamp2DateTime(LastEp.pub_time):G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x => x.DrawText($" · {LastEp.update_time.Replace(".0", "")}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
             
             point = new(cover.Width + 10, 10);
             main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
 
             string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "Bangumi");
             Directory.CreateDirectory(path);
-            string filename = $"{LastEp.id}.png";
+            string filename = $"{LastEp.episode_id}.png";
             main.Save(Path.Combine(path, filename));
             return Path.Combine("BiliBiliMonitor", "Bangumi", filename);
         }
