@@ -22,9 +22,18 @@ namespace BilibiliMonitor
         public static DateTime TimeStamp2DateTime(long timestamp) => new DateTime(1970, 1, 1, 8, 0, 0, DateTimeKind.Local).AddSeconds(timestamp);
         public static async Task<string> Get(string url)
         {
-            using var http = new HttpClient();
-            var r = await http.GetAsync(url);
-            return await r.Content.ReadAsStringAsync();
+            try
+            {
+                using var http = new HttpClient();
+                var r = await http.GetAsync(url);
+                r.Content.Headers.ContentType.CharSet = "UTF-8";
+                return await r.Content.ReadAsStringAsync();
+            }
+            catch (Exception e)
+            {
+                LogHelper.Info("Get", e.Message, false);
+                return string.Empty;
+            }
         }
         public static async Task<string> Post(string url, object payload)
         {
