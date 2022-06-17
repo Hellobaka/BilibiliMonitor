@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using BilibiliMonitor.Models;
+using System.Text;
 
 namespace BilibiliMonitor
 {
@@ -28,6 +29,8 @@ namespace BilibiliMonitor
         public event BangumiUpdateHandler OnBangumi;
         public UpdateChecker(string basePath, string picPath)
         {
+            EncodingProvider provider = CodePagesEncodingProvider.Instance;
+            Encoding.RegisterProvider(provider);
             BasePath = basePath;
             PicPath = picPath;
             Instance = this;
@@ -115,7 +118,7 @@ namespace BilibiliMonitor
         {
             if (Dynamics.Any(x => x.UID == uid))
             {
-                return null;
+                return Dynamics.First(x=>x.UID == uid);
             }
             var dy = new Dynamics(uid);
             dy.FetchDynamicList();
@@ -136,7 +139,7 @@ namespace BilibiliMonitor
         {
             if (LiveStreams.Any(x => x.UID == uid))
             {
-                return null;
+                return LiveStreams.First(x=>x.UID == uid);
             }
             var live = new LiveStreams(uid);
             live.FetchRoomInfo();
@@ -156,8 +159,9 @@ namespace BilibiliMonitor
 
         public Bangumi AddBangumi(int seasonId)
         {
-            if (Bangumis.Any(x => x.SeasonID == seasonId)) return null;
+            if (Bangumis.Any(x => x.SeasonID == seasonId)) return Bangumis.First(x=>x.SeasonID == seasonId);
             Bangumi ban = new(seasonId);
+            if (string.IsNullOrWhiteSpace(ban.Name)) return null;
             Bangumis.Add(ban);
             return ban;
         }
