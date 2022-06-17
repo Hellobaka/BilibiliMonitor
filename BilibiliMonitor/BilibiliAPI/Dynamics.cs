@@ -45,7 +45,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string url = string.Format(BaseUrl, UID);
             string text = Helper.Get(url).Result;
-            // string text = File.ReadAllText(@"E:\DO\dy3.json");
+            // string text = File.ReadAllText(@"E:\DO\dy4.json");
             var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
             if (json.code == 0)
             {

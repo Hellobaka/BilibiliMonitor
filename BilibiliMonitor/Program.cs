@@ -2,7 +2,6 @@
 using Newtonsoft.Json.Linq;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
@@ -16,11 +15,10 @@ namespace BilibiliMonitor
     {
         static void Main(string[] args)
         {
-            var group = Config.GetConfig<JObject>("Monitor_Dynamic");
-            foreach (JProperty id in group.Values())
-            {
-                var o = id.Value.ToObject<int[]>();               
-            }
+            Bangumi ban = new(41520);
+            ban.DownloadPic();
+            ban.FetchEPDetail();
+            Console.WriteLine(ban.DrawLastEpPic());
         }
     }
 }
