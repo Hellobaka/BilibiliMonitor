@@ -18,11 +18,14 @@ namespace BilibiliMonitor
         public bool Enabled { get; set; } = false;
         public List<Dynamics> Dynamics { get; set; } = new();
         public List<LiveStreams> LiveStreams { get; set; } = new();
+        public List<Bangumi> Bangumis { get; set; } = new();
 
         public delegate void DynamicUpdateHandler(DynamicModel.Item item, int id, string picPath);
         public event DynamicUpdateHandler OnDynamic;
         public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo roomInfo, LiveStreamsModel.UserInfo userInfo, string picPath);
         public event StreamOpenHandler OnStream;
+        public delegate void BangumiUpdateHandler(BangumiModel.DetailInfo bangumiInfo, BangumiModel.Detail_Episode epInfo, string picPath);
+        public event BangumiUpdateHandler OnBangumi;
         public UpdateChecker(string basePath, string picPath)
         {
             BasePath = basePath;
@@ -69,6 +72,27 @@ namespace BilibiliMonitor
                                         {
                                             OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
                                             LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
+                                        }
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
+                                }
+                            }
+
+                            foreach (var bangumi in Bangumis)
+                            {
+                                try
+                                {
+                                    if (bangumi.FetchEPDetail())
+                                    {
+                                        bangumi.DownloadPic();
+                                        string pic = bangumi.DrawLastEpPic();
+                                        if (string.IsNullOrEmpty(pic) == false)
+                                        {
+                                            OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
+                                            LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
                                         }
                                     }
                                 }
@@ -129,6 +153,20 @@ namespace BilibiliMonitor
 
             LiveStreams.Remove(LiveStreams.First(x => x.UID == uid));
         }
+
+        public Bangumi AddBangumi(int seasonId)
+        {
+            if (Bangumis.Any(x => x.SeasonID == seasonId)) return null;
+            Bangumi ban = new(seasonId);
+            Bangumis.Add(ban);
+            return ban;
+        }
+
+        public void RemoveBangumi(int seasonId)
+        {
+            if (Bangumis.Any(x => x.SeasonID == seasonId) is false) return;
+            Bangumis.Remove(Bangumis.First(x => x.SeasonID == seasonId));
+        }
         public List<(int, string, bool)> GetStreamList()
         {
             List<(int, string, bool)> ls = new();
@@ -147,6 +185,15 @@ namespace BilibiliMonitor
             }
             return ls;
         }
+        public List<(int, string)> GetBangumiList()
+        {
+            List<(int, string)> ls = new();
+            foreach (var item in Bangumis)
+            {
+                ls.Add((item.SeasonID, item.Name));
+            }
+            return ls;
+        }
         public Dynamics GetDynamic(int uid)
         {
             foreach (var item in Dynamics)
@@ -156,6 +203,7 @@ namespace BilibiliMonitor
             }
             return null;
         }
+        
         public void Start()
         {
             Enabled = true;
