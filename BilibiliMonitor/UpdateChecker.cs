@@ -27,6 +27,8 @@ namespace BilibiliMonitor
         public event StreamOpenHandler OnStream;
         public delegate void BangumiUpdateHandler(BangumiModel.DetailInfo bangumiInfo, BangumiModel.Detail_Episode epInfo, string picPath);
         public event BangumiUpdateHandler OnBangumi;
+        public delegate void BangumiEndHandler(Bangumi bangumi);
+        public event BangumiEndHandler OnBangumiEnd;
         public UpdateChecker(string basePath, string picPath)
         {
             EncodingProvider provider = CodePagesEncodingProvider.Instance;
@@ -96,6 +98,12 @@ namespace BilibiliMonitor
                                         {
                                             OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
                                             LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
+                                        }
+                                        if (bangumi.BangumiInfo.result.is_finish == "1")
+                                        {
+                                            LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
+                                            RemoveBangumi(bangumi.SeasonID);
+                                            OnBangumiEnd?.Invoke(bangumi);
                                         }
                                     }
                                 }
