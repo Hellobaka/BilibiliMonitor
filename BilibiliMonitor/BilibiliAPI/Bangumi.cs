@@ -34,10 +34,11 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string text = Helper.Get(baseInfoURL + SeasonID).Result;
             var json = JsonConvert.DeserializeObject<BangumiModel.DetailInfo>(text);
-            if (json != null && json.code == 0)
+            if (json is {code: 0})
             {
                 BangumiInfo = json;
                 Name = json.result.title;
+                LogHelper.Info("LastID", $"{json.result.episodes.Length}: {LastID}");
                 LastEp = json.result.episodes.FirstOrDefault(x=>x.episode_id == LastID.ToString());
 
                 LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
@@ -70,8 +71,8 @@ namespace BilibiliMonitor.BilibiliAPI
         }
         public void DownloadPic()
         {
-            if (BangumiInfo == null) return;
-            _ = Helper.DownloadFile(LastEp.cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            if (BangumiInfo == null || LastEp == null) return;
+            _ = Helper.DownloadFile(LastEp?.cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
             _ = Helper.DownloadFile(BangumiInfo.result.squareCover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
         }
         public string DrawLastEpPic()
