@@ -15,9 +15,9 @@ namespace BilibiliMonitor
     {
         static void Main(string[] args)
         {
-            Bangumi ban = new(41470);
-            ban.DownloadPic();
+            Bangumi ban = new(41481);
             ban.FetchEPDetail();
+            ban.DownloadPic();
             Console.WriteLine(ban.DrawLastEpPic());
         }
     }
