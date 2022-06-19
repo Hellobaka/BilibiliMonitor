@@ -25,7 +25,7 @@ namespace BilibiliMonitor
         public event DynamicUpdateHandler OnDynamic;
         public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo roomInfo, LiveStreamsModel.UserInfo userInfo, string picPath);
         public event StreamOpenHandler OnStream;
-        public delegate void BangumiUpdateHandler(BangumiModel.DetailInfo bangumiInfo, BangumiModel.Detail_Episode epInfo, string picPath);
+        public delegate void BangumiUpdateHandler(BangumiModel.DetailInfo bangumiInfo, BangumiModel.Episode epInfo, string picPath);
         public event BangumiUpdateHandler OnBangumi;
         public delegate void BangumiEndHandler(Bangumi bangumi);
         public event BangumiEndHandler OnBangumiEnd;
