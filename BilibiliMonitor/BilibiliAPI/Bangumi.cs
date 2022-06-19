@@ -24,7 +24,8 @@ namespace BilibiliMonitor.BilibiliAPI
         public string Name { get; set; }
         public int LastID { get; set; }
         public BangumiModel.DetailInfo BangumiInfo { get; set; }
-        public BangumiModel.Detail_Episode LastEp { get; set; }
+        public BangumiModel.Episode LastEp { get; set; }
+        public bool ReFetchFlag { get; set; }
         public Bangumi(int seasonId)
         {
             SeasonID = seasonId;
@@ -39,7 +40,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 BangumiInfo = json;
                 Name = json.result.title;
                 LogHelper.Info("LastID", $"{json.result.episodes.Length}: {LastID}");
-                LastEp = json.result.episodes.FirstOrDefault(x=>x.episode_id == LastID.ToString());
+                // LastEp = json.result.episodes.FirstOrDefault(x=>x.episode_id == LastID.ToString());
 
                 LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
                 return true;
@@ -47,6 +48,7 @@ namespace BilibiliMonitor.BilibiliAPI
             LogHelper.Info("拉取番剧信息", text, false);
             return false;
         }
+        bool init = true;
         public bool FetchEPDetail()
         {
             if (BangumiInfo == null) return false;
@@ -55,13 +57,18 @@ namespace BilibiliMonitor.BilibiliAPI
             if(json.code == 0)
             {
                 LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
-                bool flag = LastID == 0;
-                if (json.result.main_section.episodes.Last().id != LastID)
+                LastEp = json.result.main_section.episodes.Last();
+                if (ReFetchFlag || LastEp.id != LastID)
                 {
                     LogHelper.Info("更新番剧信息", "新的剧集出现了");                    
                     LastID = json.result.main_section.episodes.Last().id;
-                    FetchInfo();
-                    if (flag) return false;// 初始化
+                    FetchInfo(); 
+                    ReFetchFlag = false;
+                    if (init)//初始化
+                    {
+                        init = false;
+                        return false;
+                    }
                     return true;
                 }
                 return false;
@@ -112,21 +119,21 @@ namespace BilibiliMonitor.BilibiliAPI
                 WrappingLength = Info.Width,
                 Origin = point
             };
-            Info.Mutate(x => x.DrawText(option, LastEp.index_title, Color.Black));
+            Info.Mutate(x => x.DrawText(option, LastEp.long_title, Color.Black));
             point = new(10, 178 - 20);
-            string epCount = $"第{LastEp.index}话";
+            string epCount = $"第{LastEp.title}话";
             Info.Mutate(x => x.DrawText(epCount, smallFont, Rgba32.ParseHex("#99a2aa"), point));
             option = new TextOptions(smallFont);
             size = TextMeasurer.Measure(epCount, option);
             point = new(point.X + size.Width, point.Y);
-            Info.Mutate(x => x.DrawText($" · {LastEp.update_time.Replace(".0", "")}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x => x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
             
             point = new(cover.Width + 10, 10);
             main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
 
             string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "Bangumi");
             Directory.CreateDirectory(path);
-            string filename = $"{LastEp.episode_id}.png";
+            string filename = $"{LastEp.id}.png";
             main.Save(Path.Combine(path, filename));
             return Path.Combine("BiliBiliMonitor", "Bangumi", filename);
         }
