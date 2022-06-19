@@ -23,6 +23,7 @@ namespace BilibiliMonitor.BilibiliAPI
         public string UserName { get; set; }
         private static FontFamily EmojiFont { get; set; }
         private static FontFamily FanNumFont { get; set; }
+        public bool ReFetchFlag { get; set; } = false;
         public DynamicModel.Item LatestDynamic
         {
             get
@@ -43,6 +44,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// <returns>是否有变化</returns>
         public bool FetchDynamicList()
         {
+            if (ReFetchFlag) { ReFetchFlag = false; return true; }
             string url = string.Format(BaseUrl, UID);
             string text = Helper.Get(url).Result;
             // string text = File.ReadAllText(@"E:\DO\dy4.json");

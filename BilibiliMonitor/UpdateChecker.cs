@@ -57,7 +57,21 @@ namespace BilibiliMonitor
                                             OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
                                             LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
                                         }
+                                        dy.ReFetchFlag = false;
+                                        dynamicErrCount = 0;
+                                    }                                    
+                                }
+                                catch(IOException)
+                                {
+                                    dy.ReFetchFlag = true;
+                                    if (dynamicErrCount >= 3)
+                                    {
+                                        LogHelper.Info("动态更新", "错误次数超过上限", false);
+                                        dy.ReFetchFlag = false;
+                                        dynamicErrCount = 0;
                                     }
+                                    LogHelper.Info("动态更新", $"文件访问被拒绝，错误次数{dynamicErrCount}", false);
+                                    dynamicErrCount++;
                                 }
                                 catch (Exception e)
                                 {
@@ -78,7 +92,21 @@ namespace BilibiliMonitor
                                             OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
                                             LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
                                         }
+                                        live.ReFetchFlag = false;
+                                        livestreamErrCount = 0;
                                     }
+                                }
+                                catch(IOException)
+                                {
+                                    live.ReFetchFlag = true;
+                                    if (livestreamErrCount >= 3)
+                                    {
+                                        LogHelper.Info("直播更新", "错误次数超过上限", false);
+                                        live.ReFetchFlag = false;
+                                        livestreamErrCount = 0;
+                                    }
+                                    LogHelper.Info("直播更新", $"文件访问被拒绝，错误次数{livestreamErrCount}", false);
+                                    livestreamErrCount++;
                                 }
                                 catch (Exception e)
                                 {
@@ -105,7 +133,21 @@ namespace BilibiliMonitor
                                             RemoveBangumi(bangumi.SeasonID);
                                             OnBangumiEnd?.Invoke(bangumi);
                                         }
+                                        bangumi.ReFetchFlag = false;
+                                        bangumiErrCount = 0;
                                     }
+                                }
+                                catch (IOException)
+                                {
+                                    bangumi.ReFetchFlag = true;
+                                    if (bangumiErrCount >= 3)
+                                    {
+                                        LogHelper.Info("番剧更新", "错误次数超过上限", false);
+                                        bangumi.ReFetchFlag = false;
+                                        bangumiErrCount = 0;
+                                    }
+                                    LogHelper.Info("番剧更新", $"文件访问被拒绝，错误次数{bangumiErrCount}", false);
+                                    bangumiErrCount++;
                                 }
                                 catch (Exception e)
                                 {
@@ -122,6 +164,9 @@ namespace BilibiliMonitor
                 }
             }).Start();
         }
+        int bangumiErrCount = 0;
+        int dynamicErrCount = 0;
+        int livestreamErrCount = 0;
         public Dynamics AddDynamic(int uid)
         {
             if (Dynamics.Any(x => x.UID == uid))

@@ -24,6 +24,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private int StreamingStatus { get; set; }
         public LiveStreamsModel.RoomInfo RoomInfo { get; set; }
         public LiveStreamsModel.UserInfo UserInfo { get; set; }
+        public bool ReFetchFlag { get; set; }
 
         public LiveStreams(int uid)
         {
@@ -43,6 +44,7 @@ namespace BilibiliMonitor.BilibiliAPI
         }
         public bool FetchRoomInfo()
         {
+            if (ReFetchFlag) { ReFetchFlag = false; return true; }
             string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
             if (json.code == 0)
