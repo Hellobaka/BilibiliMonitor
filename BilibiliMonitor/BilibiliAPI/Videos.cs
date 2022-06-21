@@ -10,6 +10,9 @@ using SixLabors.ImageSharp.Processing;
 using System.Diagnostics;
 using System.IO;
 using Path = System.IO.Path;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Net.Http;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -18,6 +21,39 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
         private static string BaseUserInfoURL = "http://api.bilibili.com/x/web-interface/card?mid={0}";
         private static string BaseVideoTagURL = "https://api.bilibili.com/x/tag/archive/tags?bvid={0}";
+        public static string ParseURLFromXML(string xml)
+        {
+            var match = Regex.Match(xml, "(https://b23\\.tv/.*?)\\?share_medium=");
+            if (match.Success)
+            {
+                return ParseURL(match.Groups[1].Value);
+            }
+            return "";
+        }
+        public static string ParseURL(string url)
+        {
+            if (url.Contains("b23.tv"))
+            {
+                using var http = new HttpClient();
+                var r = http.GetAsync(url);
+                r.Wait();
+                url = r.Result.RequestMessage.RequestUri.AbsoluteUri;
+            }
+            if(url.Contains("www.bilibili.com/video"))
+            {
+                var bvid = url.Split('/').Last();
+                if(bvid.Contains("?"))
+                {
+                    bvid = bvid.Split('?').First();
+                }
+                return bvid;
+            }
+            else
+            {
+                LogHelper.Info("视频解析", "网址格式无法解析", false);
+                return string.Empty;
+            }
+        }
         private static VideoModel.Data GetVideoInfo(string bvId)
         {
             string url = string.Format(BaseVideoURL, "bvid=" + bvId);
