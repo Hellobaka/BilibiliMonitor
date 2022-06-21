@@ -28,7 +28,6 @@ namespace BilibiliMonitor.Models
             public Desc_V2[] desc_v2 { get; set; }
             public int state { get; set; }
             public int duration { get; set; }
-            public int mission_id { get; set; }
             public Rights rights { get; set; }
             public Owner owner { get; set; }
             public Stat stat { get; set; }
@@ -37,6 +36,7 @@ namespace BilibiliMonitor.Models
             public Dimension dimension { get; set; }
             public object premiere { get; set; }
             public int teenage_mode { get; set; }
+            public bool is_chargeable_season { get; set; }
             public bool no_cache { get; set; }
             public Page[] pages { get; set; }
             public Subtitle subtitle { get; set; }
@@ -63,6 +63,8 @@ namespace BilibiliMonitor.Models
             public int is_stein_gate { get; set; }
             public int is_360 { get; set; }
             public int no_share { get; set; }
+            public int arc_pay { get; set; }
+            public int free_watch { get; set; }
         }
 
         public class Owner
@@ -109,6 +111,15 @@ namespace BilibiliMonitor.Models
 
         public class Honor_Reply
         {
+            public Honor[] honor { get; set; }
+        }
+
+        public class Honor
+        {
+            public int aid { get; set; }
+            public int type { get; set; }
+            public string desc { get; set; }
+            public int weekly_recommend_num { get; set; }
         }
 
         public class Desc_V2
@@ -128,7 +139,6 @@ namespace BilibiliMonitor.Models
             public string vid { get; set; }
             public string weblink { get; set; }
             public Dimension1 dimension { get; set; }
-            public string first_frame { get; set; }
         }
 
         public class Dimension1

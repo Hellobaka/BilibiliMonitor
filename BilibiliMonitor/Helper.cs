@@ -103,5 +103,19 @@ namespace BilibiliMonitor
         {
             return new PointF(p.X, p.Y);
         }
+        public static string ParseLongNumber(int num)
+        {
+            string numStr = num.ToString();
+            int step = 1;
+            for(int i = numStr.Length - 1; i > 0; i--)
+            {
+                if(step % 3 == 0)
+                {
+                    numStr = numStr.Insert(i, ",");
+                }
+                step++;
+            }
+            return numStr;
+        }
     }
 }
