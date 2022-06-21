@@ -41,12 +41,16 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             if(url.Contains("www.bilibili.com/video"))
             {
-                var bvid = url.Split('/').Last();
-                if(bvid.Contains("?"))
+                var vid = url.Split('/').Last();
+                if(vid.Contains("?"))
                 {
-                    bvid = bvid.Split('?').First();
+                    vid = vid.Split('?').First();
                 }
-                return bvid;
+                if(vid.StartsWith("AV") || vid.StartsWith("av"))
+                {
+                    vid = vid.Substring(2);
+                }
+                return vid;
             }
             else
             {
