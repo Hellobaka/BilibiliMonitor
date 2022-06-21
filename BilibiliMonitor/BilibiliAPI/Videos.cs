@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using BilibiliMonitor.Models;
 using Newtonsoft.Json;
 using SixLabors.Fonts;
@@ -21,26 +22,45 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
         private static string BaseUserInfoURL = "http://api.bilibili.com/x/web-interface/card?mid={0}";
         private static string BaseVideoTagURL = "https://api.bilibili.com/x/tag/archive/tags?bvid={0}";
+
+        private static Dictionary<string, string> shortURLCache { get; set; } = new();
         public static string ParseURLFromXML(string xml)
         {
             var match = Regex.Match(xml, "(https://b23\\.tv/.*?)\\?share_medium=");
             if (match.Success)
             {
-                return ParseURL(match.Groups[1].Value);
+                string res = ParseURL(match.Groups[1].Value);
+                if (string.IsNullOrEmpty(res)) return string.Empty;
+                if(!shortURLCache.ContainsKey(match.Groups[1].Value))
+                    shortURLCache.Add(match.Groups[1].Value, res);
+                return res;
             }
-            return "";
+            return string.Empty;
         }
         public static string ParseURL(string url)
         {
+            if (string.IsNullOrEmpty(url)) return string.Empty;
+            //LogHelper.Info("视频解析", url);
             if (url.Contains("b23.tv"))
             {
+                var match = Regex.Match(url, "https://b23\\.tv/.*");
+                if (match.Success)
+                    url = match.Groups[match.Groups.Count - 1].Value;
+                url = url.Split('?').First();
+                if (shortURLCache.ContainsKey(url)) return shortURLCache[url];
+                
                 using var http = new HttpClient();
                 var r = http.GetAsync(url);
                 r.Wait();
-                url = r.Result.RequestMessage.RequestUri.AbsoluteUri;
+                string bvid = r.Result.RequestMessage.RequestUri.AbsoluteUri;
+                if(!shortURLCache.ContainsKey(url))
+                    shortURLCache.Add(url, bvid);
+                url = bvid;
             }
-            if(url.Contains("www.bilibili.com/video"))
+            //LogHelper.Info("视频解析", url);
+            if (url.Contains("www.bilibili.com/video"))
             {
+                if (url.EndsWith("/")) url = url.Substring(0, url.Length - 1);
                 var vid = url.Split('/').Last();
                 if(vid.Contains("?"))
                 {
@@ -54,7 +74,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                LogHelper.Info("视频解析", "网址格式无法解析", false);
+                //LogHelper.Info("视频解析", "网址格式无法解析", false);
                 return string.Empty;
             }
         }
@@ -251,7 +271,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// 分字符绘制，处理emoji
         /// </summary>
         /// <returns>总字符高度</returns>
-        public static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
+        private static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
             return DrawString(img, c.ToString(), color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
         }
