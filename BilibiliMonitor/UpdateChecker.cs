@@ -42,6 +42,8 @@ namespace BilibiliMonitor
                 {
                     if (Enabled)
                     {
+                        Thread.Sleep(DynamicCheckCD * 60 * 1000);
+
                         try
                         {
                             foreach (var dy in Dynamics)
@@ -159,7 +161,6 @@ namespace BilibiliMonitor
                         {
                             LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                         }
-                        Thread.Sleep(DynamicCheckCD * 60 * 1000);
                     }
                 }
             }).Start();
