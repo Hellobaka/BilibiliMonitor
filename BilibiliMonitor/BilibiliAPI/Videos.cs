@@ -265,6 +265,8 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{video.aid}.png";
             main.Save(Path.Combine(path, filename));
+            GC.Collect();
+
             return Path.Combine("BiliBiliMonitor", "Video", filename);
         }
         /// <summary>

@@ -9,6 +9,7 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Path = System.IO.Path;
+using System;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -119,6 +120,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{RoomID}.png";
             main.Save(Path.Combine(path, filename));
+            GC.Collect();
             return Path.Combine("BiliBiliMonitor", "LiveStream", filename);
         }
 

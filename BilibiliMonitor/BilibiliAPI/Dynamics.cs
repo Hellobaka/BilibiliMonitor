@@ -46,8 +46,8 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (ReFetchFlag) { ReFetchFlag = false; return true; }
             string url = string.Format(BaseUrl, UID);
-            string text = Helper.Get(url).Result;
-            // string text = File.ReadAllText(@"E:\DO\dy4.json");
+            // string text = Helper.Get(url).Result;
+            string text = File.ReadAllText(@"E:\DO\dy4.json");
             var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
             if (json.code == 0)
             {
@@ -279,6 +279,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{item.id_str}.png";
             main.Save(Path.Combine(path, filename));
+            GC.Collect();
             return Path.Combine("BiliBiliMonitor", "Dynamic", filename);
         }
         /// <summary>
@@ -702,7 +703,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// 分字符绘制，处理emoji
         /// </summary>
         /// <returns>总字符高度</returns>
-        public static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
+        private static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
             string target;
             if (c.JudgeEmoji())
@@ -731,7 +732,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// 文本绘制
         /// </summary>
         /// <returns>总字符高度</returns>
-        public static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
+        private static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
             if (string.IsNullOrEmpty(text)) return totalHeight;
             FontRectangle charSize = new();

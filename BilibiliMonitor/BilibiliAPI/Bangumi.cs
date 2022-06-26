@@ -135,6 +135,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{LastEp.id}.png";
             main.Save(Path.Combine(path, filename));
+            GC.Collect();
             return Path.Combine("BiliBiliMonitor", "Bangumi", filename);
         }
     }
