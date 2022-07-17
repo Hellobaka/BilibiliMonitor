@@ -234,6 +234,7 @@
             public Draw draw { get; set; }
             public string type { get; set; }
             public Archive archive { get; set; }
+            public Article article { get; set; }
         }
 
         public class Draw
@@ -410,8 +411,16 @@
         {
             public string tips { get; set; }
         }
-
+        public class Article
+        {
+            public string[] covers { get; set; }
+            public string desc { get; set; }
+            public string title { get; set; }
+            public string jump_url { get; set; }
+            public string label { get; set; }
+        }
     }
+
 
     public class Vote
     {
