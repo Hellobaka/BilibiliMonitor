@@ -147,13 +147,15 @@ namespace BilibiliMonitor.BilibiliAPI
                     Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 if (item.modules.module_dynamic.major?.archive != null)
                 {
-                    item.modules.module_dynamic.major.archive.cover += "@203w_127h_1c.webp";
+                    if (!item.modules.module_dynamic.major.archive.cover.EndsWith(".webp"))
+                        item.modules.module_dynamic.major.archive.cover += "@203w_127h_1c.webp";
                     _ = Helper.DownloadFile(item.modules.module_dynamic.major.archive.cover,
                         Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
                 if (item.modules.module_dynamic.major?.article != null)
                 {
-                    item.modules.module_dynamic.major.article.covers[0] += "@518w_120h_1c.webp";
+                    if (!item.modules.module_dynamic.major.article.covers[0].EndsWith(".webp"))
+                        item.modules.module_dynamic.major.article.covers[0] += "@518w_120h_1c.webp";
                     _ = Helper.DownloadFile(item.modules.module_dynamic.major.article.covers[0],
                         Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
