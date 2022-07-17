@@ -63,21 +63,18 @@ namespace BilibiliMonitor
                                         dynamicErrCount = 0;
                                     }                                    
                                 }
-                                catch(IOException)
+                                catch(Exception e)
                                 {
                                     dy.ReFetchFlag = true;
                                     if (dynamicErrCount >= 3)
                                     {
                                         LogHelper.Info("动态更新", "错误次数超过上限", false);
+                                        LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                         dy.ReFetchFlag = false;
                                         dynamicErrCount = 0;
                                     }
-                                    LogHelper.Info("动态更新", $"文件访问被拒绝，错误次数{dynamicErrCount}", false);
+                                    LogHelper.Info("动态更新", $"错误次数{dynamicErrCount}", false);
                                     dynamicErrCount++;
-                                }
-                                catch (Exception e)
-                                {
-                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                 }
                             }
 
@@ -129,14 +126,14 @@ namespace BilibiliMonitor
                                             OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
                                             LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
                                         }
-                                        if (bangumi.BangumiInfo.result.is_finish == "1")
-                                        {
-                                            LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
-                                            RemoveBangumi(bangumi.SeasonID);
-                                            OnBangumiEnd?.Invoke(bangumi);
-                                        }
                                         bangumi.ReFetchFlag = false;
                                         bangumiErrCount = 0;
+                                    }
+                                    if (bangumi.BangumiInfo.result.is_finish == "1")
+                                    {
+                                        LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
+                                        RemoveBangumi(bangumi.SeasonID);
+                                        OnBangumiEnd?.Invoke(bangumi);
                                     }
                                 }
                                 catch (IOException)

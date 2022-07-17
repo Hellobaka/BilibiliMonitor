@@ -35,6 +35,11 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             string text = Helper.Get(baseInfoURL + SeasonID).Result;
             var json = JsonConvert.DeserializeObject<BangumiModel.DetailInfo>(text);
+            if (json == null)
+            {
+                LogHelper.Info("拉取番剧详情", $"name={Name}, json={text}", false);
+                return false;
+            }
             if (json is {code: 0})
             {
                 BangumiInfo = json;
@@ -57,6 +62,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if(json.code == 0)
             {
                 LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
+                if (json.result.main_section == null) return false;
                 LastEp = json.result.main_section.episodes.Last();
                 if (ReFetchFlag || LastEp.id != LastID)
                 {
