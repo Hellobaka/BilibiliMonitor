@@ -73,7 +73,7 @@ namespace BilibiliMonitor
                                         dy.ReFetchFlag = false;
                                         dynamicErrCount = 0;
                                     }
-                                    LogHelper.Info("动态更新", $"错误次数{dynamicErrCount}", false);
+                                    LogHelper.Info("动态更新", $"错误次数={dynamicErrCount},exc={e.Message+e.StackTrace}", false);
                                     dynamicErrCount++;
                                 }
                             }
@@ -95,7 +95,7 @@ namespace BilibiliMonitor
                                         livestreamErrCount = 0;
                                     }
                                 }
-                                catch(IOException)
+                                catch(Exception e)
                                 {
                                     live.ReFetchFlag = true;
                                     if (livestreamErrCount >= 3)
@@ -104,15 +104,12 @@ namespace BilibiliMonitor
                                         live.ReFetchFlag = false;
                                         livestreamErrCount = 0;
                                     }
-                                    LogHelper.Info("直播更新", $"文件访问被拒绝，错误次数{livestreamErrCount}", false);
+                                    LogHelper.Info("直播更新", $"错误次数={livestreamErrCount},exc={e.Message+e.StackTrace}", false);
                                     livestreamErrCount++;
-                                }
-                                catch (Exception e)
-                                {
-                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                 }
                             }
 
+                            List<int> removeBangumiList = new();
                             foreach (var bangumi in Bangumis)
                             {
                                 try
@@ -132,11 +129,11 @@ namespace BilibiliMonitor
                                     if (bangumi.BangumiInfo.result.is_finish == "1")
                                     {
                                         LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
-                                        RemoveBangumi(bangumi.SeasonID);
+                                        removeBangumiList.Add(bangumi.SeasonID);
                                         OnBangumiEnd?.Invoke(bangumi);
                                     }
                                 }
-                                catch (IOException)
+                                catch (Exception e)
                                 {
                                     bangumi.ReFetchFlag = true;
                                     if (bangumiErrCount >= 3)
@@ -145,12 +142,16 @@ namespace BilibiliMonitor
                                         bangumi.ReFetchFlag = false;
                                         bangumiErrCount = 0;
                                     }
-                                    LogHelper.Info("番剧更新", $"文件访问被拒绝，错误次数{bangumiErrCount}", false);
+                                    LogHelper.Info("番剧更新", $"错误次数={bangumiErrCount},exc={e.Message+e.StackTrace}", false);
                                     bangumiErrCount++;
                                 }
-                                catch (Exception e)
+                            }
+
+                            if (removeBangumiList.Count != 0)
+                            {
+                                foreach (int item in removeBangumiList)
                                 {
-                                    LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
+                                    RemoveBangumi(item);
                                 }
                             }
                         }
