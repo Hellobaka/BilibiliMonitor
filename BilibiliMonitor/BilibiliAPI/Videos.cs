@@ -321,7 +321,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                point.X += charSize.Width + charGap;
+                point.X += charSize.Width;
             }
             return totalHeight;
         }
