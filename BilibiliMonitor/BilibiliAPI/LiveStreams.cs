@@ -56,6 +56,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     StreamingStatus = json.data.live_status;
                     if (Streaming)
                     {
+                        if (json.data.live_time.StartsWith("0000")) return false;
                         LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
                         return true;
                     }                    
