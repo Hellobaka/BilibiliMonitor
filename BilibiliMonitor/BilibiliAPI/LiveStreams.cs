@@ -51,6 +51,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if (json.code == 0)
             {
                 RoomInfo = json.data;
+                if (json.data.live_time.StartsWith("0000")) return false;
                 if (json.data.live_status != StreamingStatus)
                 {
                     StreamingStatus = json.data.live_status;
@@ -74,6 +75,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (RoomInfo == null || UserInfo == null) return string.Empty;
             using Image<Rgba32> main = new(652, 198, Color.White);
+            //TODO: 奇怪目录占用
             using Image avatar =
                 Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", UserInfo.info.face.GetFileNameFromURL()));
             using Image cover =
