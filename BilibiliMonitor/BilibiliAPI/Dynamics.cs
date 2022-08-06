@@ -243,6 +243,7 @@ namespace BilibiliMonitor.BilibiliAPI
             int padding = 10;
 
             using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
+            //TODO: 未知内存溢出
             using Image<Rgba32> background = new(632, 30000, Color.White);
 
             int left = 78;
@@ -271,7 +272,15 @@ namespace BilibiliMonitor.BilibiliAPI
             Color nameColor = Color.Black;
             if (item.modules.module_author.vip?.status == 1)
             {
-                nameColor = Color.ParseHex(item.modules.module_author.vip.nickname_color);
+                try
+                {
+                    nameColor = Color.ParseHex(item.modules.module_author.vip.nickname_color);
+                }
+                catch
+                {
+                    LogHelper.Info("颜色异常", $"color: {item.modules.module_author.vip.nickname_color}", false);
+                    nameColor = Color.Black;
+                }
             }
 
             background.Mutate(x => x.DrawText(item.modules.module_author.name, font, nameColor, new PointF(left, 27)));
@@ -727,6 +736,7 @@ namespace BilibiliMonitor.BilibiliAPI
             PointF initalPoint = new(point.X, point.Y);
 
             int picCount = (int) (item?.items.Length);
+            //TODO: 过滤gif
             if (picCount == 1)
             {
                 var i = item.items[0];
