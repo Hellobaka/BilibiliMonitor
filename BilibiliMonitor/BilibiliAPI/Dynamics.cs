@@ -170,6 +170,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     foreach (var i in item.modules.module_dynamic.major?.draw?.items)
                     {
+                        if (i.src.Contains(".gif")) continue;
                         string webp = ".webp";
                         if (i.height / (double) i.width > 2)
                         {
@@ -245,7 +246,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
             //TODO: 未知内存溢出
             using Image<Rgba32> background = new(632, 30000, Color.White);
-
+            
             int left = 78;
             //TODO: 提取方法
             //头像
@@ -257,7 +258,7 @@ namespace BilibiliMonitor.BilibiliAPI
             IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
             avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
             background.Mutate(x => x.DrawImage(avatarFrame, new Point(14, 14), 1));
-
+            
             if (!string.IsNullOrWhiteSpace(item.modules.module_author.pendant.image))
             {
                 using Image pendant = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
@@ -736,10 +737,10 @@ namespace BilibiliMonitor.BilibiliAPI
             PointF initalPoint = new(point.X, point.Y);
 
             int picCount = (int) (item?.items.Length);
-            //TODO: 过滤gif
             if (picCount == 1)
             {
                 var i = item.items[0];
+                if (i.src.Contains(".gif")) return img;
                 using Image image = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                     i.src.GetFileNameFromURL()));
                 img.DrawImage(image, (Point) point, 1);
@@ -751,6 +752,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     for (int index = 1; index <= picCount; index++)
                     {
+                        if (item.items[index - 1].src.Contains(".gif")) continue;
                         using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             item.items[index - 1].src.GetFileNameFromURL()));
                         img.DrawImage(tmp, (Point) point, 1);
@@ -768,6 +770,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     for (int index = 1; index <= picCount; index++)
                     {
+                        if (item.items[index - 1].src.Contains(".gif")) continue;
                         using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             item.items[index - 1].src.GetFileNameFromURL()));
                         img.DrawImage(tmp, (Point) point, 1);
