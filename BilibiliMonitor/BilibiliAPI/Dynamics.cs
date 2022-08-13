@@ -26,7 +26,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static FontFamily EmojiFont { get; set; }
         private static FontFamily FanNumFont { get; set; }
         public bool ReFetchFlag { get; set; } = false;
-
+        public List<(string, DateTime)> Used { get; set; } = new();
         public DynamicModel.Item LatestDynamic
         {
             get { return DynamicList.Find(x => x.id_str == LastDynamicID); }
@@ -81,6 +81,11 @@ namespace BilibiliMonitor.BilibiliAPI
                 if (LastDynamicID != max)
                 {
                     LastDynamicID = max;
+                    if (Used.Any(item => item.Item1 == max))
+                    {
+                        return false;
+                    }
+                    Used.Add((LastDynamicID, DateTime.Now));
                     return true;
                 }
             }

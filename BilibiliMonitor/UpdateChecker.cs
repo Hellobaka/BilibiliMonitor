@@ -50,6 +50,11 @@ namespace BilibiliMonitor
                             {
                                 try
                                 {
+                                    foreach (var item in dy.Used)
+                                    {
+                                        if (item.Item2.AddDays(1) < DateTime.Now)
+                                            dy.Used.Remove(item);
+                                    }
                                     if (dy.FetchDynamicList())
                                     {
                                         dy.DownloadPics();
