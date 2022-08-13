@@ -39,6 +39,8 @@ namespace BilibiliMonitor.BilibiliAPI
         }
         public static string ParseURL(string url)
         {
+            if (url.StartsWith("bv") || url.StartsWith("BV") || url.StartsWith("av") || url.StartsWith("AV"))
+                return url;
             if (string.IsNullOrEmpty(url)) return string.Empty;
             //LogHelper.Info("视频解析", url);
             if (url.Contains("b23.tv"))
@@ -58,8 +60,12 @@ namespace BilibiliMonitor.BilibiliAPI
                 url = bvid;
             }
             //LogHelper.Info("视频解析", url);
-            if (url.Contains("www.bilibili.com/video"))
+            if (url.Contains("bilibili.com/video"))
             {
+                if (url.Contains("p="))
+                {
+                    url = url.Split('?').First();
+                }
                 if (url.EndsWith("/")) url = url.Substring(0, url.Length - 1);
                 var vid = url.Split('/').Last();
                 if(vid.Contains("?"))
