@@ -47,6 +47,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (ReFetchFlag) { ReFetchFlag = false; return true; }
             string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
+            if (string.IsNullOrEmpty(text)) return false;
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
             if (json.code == 0)
             {

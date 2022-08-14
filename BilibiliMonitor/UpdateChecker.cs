@@ -50,10 +50,14 @@ namespace BilibiliMonitor
                             {
                                 try
                                 {
-                                    foreach (var item in dy.Used)
+                                    for (int i = 0; i < dy.Used.Count; i++)
                                     {
+                                        var item = dy.Used[i];
                                         if (item.Item2.AddDays(1) < DateTime.Now)
+                                        {
                                             dy.Used.Remove(item);
+                                            i--;
+                                        }
                                     }
                                     if (dy.FetchDynamicList())
                                     {
@@ -66,9 +70,9 @@ namespace BilibiliMonitor
                                         }
                                         dy.ReFetchFlag = false;
                                         dynamicErrCount = 0;
-                                    }                                    
+                                    }
                                 }
-                                catch(Exception e)
+                                catch (Exception e)
                                 {
                                     dy.ReFetchFlag = true;
                                     if (dynamicErrCount >= 3)
@@ -78,7 +82,7 @@ namespace BilibiliMonitor
                                         dy.ReFetchFlag = false;
                                         dynamicErrCount = 0;
                                     }
-                                    LogHelper.Info("动态更新", $"错误次数={dynamicErrCount},exc={e.Message+e.StackTrace}", false);
+                                    LogHelper.Info("动态更新", $"错误次数={dynamicErrCount},exc={e.Message + e.StackTrace}", false);
                                     dynamicErrCount++;
                                 }
                             }
@@ -87,7 +91,7 @@ namespace BilibiliMonitor
                             {
                                 try
                                 {
-                                    if(live.FetchRoomInfo())
+                                    if (live.FetchRoomInfo())
                                     {
                                         live.DownloadPics();
                                         string pic = live.DrawLiveStreamPic();
@@ -100,7 +104,7 @@ namespace BilibiliMonitor
                                         livestreamErrCount = 0;
                                     }
                                 }
-                                catch(Exception e)
+                                catch (Exception e)
                                 {
                                     live.ReFetchFlag = true;
                                     if (livestreamErrCount >= 3)
@@ -109,7 +113,7 @@ namespace BilibiliMonitor
                                         live.ReFetchFlag = false;
                                         livestreamErrCount = 0;
                                     }
-                                    LogHelper.Info("直播更新", $"错误次数={livestreamErrCount},exc={e.Message+e.StackTrace}", false);
+                                    LogHelper.Info("直播更新", $"错误次数={livestreamErrCount},exc={e.Message + e.StackTrace}", false);
                                     livestreamErrCount++;
                                 }
                             }
@@ -147,7 +151,7 @@ namespace BilibiliMonitor
                                         bangumi.ReFetchFlag = false;
                                         bangumiErrCount = 0;
                                     }
-                                    LogHelper.Info("番剧更新", $"错误次数={bangumiErrCount},exc={e.Message+e.StackTrace}", false);
+                                    LogHelper.Info("番剧更新", $"错误次数={bangumiErrCount},exc={e.Message + e.StackTrace}", false);
                                     bangumiErrCount++;
                                 }
                             }
@@ -175,7 +179,7 @@ namespace BilibiliMonitor
         {
             if (Dynamics.Any(x => x.UID == uid))
             {
-                return Dynamics.First(x=>x.UID == uid);
+                return Dynamics.First(x => x.UID == uid);
             }
             var dy = new Dynamics(uid);
             dy.FetchDynamicList();
@@ -196,7 +200,7 @@ namespace BilibiliMonitor
         {
             if (LiveStreams.Any(x => x.UID == uid))
             {
-                return LiveStreams.First(x=>x.UID == uid);
+                return LiveStreams.First(x => x.UID == uid);
             }
             var live = new LiveStreams(uid);
             live.FetchRoomInfo();
@@ -216,7 +220,7 @@ namespace BilibiliMonitor
 
         public Bangumi AddBangumi(int seasonId)
         {
-            if (Bangumis.Any(x => x.SeasonID == seasonId)) return Bangumis.First(x=>x.SeasonID == seasonId);
+            if (Bangumis.Any(x => x.SeasonID == seasonId)) return Bangumis.First(x => x.SeasonID == seasonId);
             Bangumi ban = new(seasonId);
             if (string.IsNullOrWhiteSpace(ban.Name)) return null;
             Bangumis.Add(ban);
@@ -259,12 +263,12 @@ namespace BilibiliMonitor
         {
             foreach (var item in Dynamics)
             {
-                if(item.UID == uid)
+                if (item.UID == uid)
                     return item;
             }
             return null;
         }
-        
+
         public void Start()
         {
             Enabled = true;
