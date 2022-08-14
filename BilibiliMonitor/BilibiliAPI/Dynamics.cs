@@ -59,7 +59,7 @@ namespace BilibiliMonitor.BilibiliAPI
             var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
             if (json == null)
             {
-                LogHelper.Info("拉取动态列表", $"username={UserName}, json={text}", false);
+                LogHelper.Info("拉取动态列表", $"username={UserName}, json={text}");
                 return false;
             }
 

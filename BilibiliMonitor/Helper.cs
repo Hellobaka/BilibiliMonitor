@@ -31,7 +31,7 @@ namespace BilibiliMonitor
             }
             catch (Exception e)
             {
-                LogHelper.Info("Get", e.Message, false);
+                LogHelper.Info("Get", e.Message);
                 return string.Empty;
             }
         }
