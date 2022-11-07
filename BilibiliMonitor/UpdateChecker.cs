@@ -48,7 +48,7 @@ namespace BilibiliMonitor
                         {
                             foreach (var dy in Dynamics)// 动态检查
                             {
-                                string pic = "";
+                                string pic = null;
                                 try
                                 {
                                     // TODO: 移动至独立方法
@@ -73,6 +73,7 @@ namespace BilibiliMonitor
                                 }
                                 catch (Exception e)
                                 {
+                                    pic = null;
                                     dy.ReFetchFlag = true;
                                     LogHelper.Info("动态更新", $"错误次数={dynamicErrCount},exc={e.Message + e.StackTrace}", false);
                                     dynamicErrCount++;
@@ -82,18 +83,22 @@ namespace BilibiliMonitor
                                         LogHelper.Info("异常捕获", e.Message + e.StackTrace, false);
                                         dy.ReFetchFlag = false;
                                         dynamicErrCount = 1;
+                                        pic = "";
                                     }
                                 }
                                 finally
                                 {
-                                    OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
-                                    LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                    if (pic != null)
+                                    {
+                                        OnDynamic?.Invoke(dy.LatestDynamic, dy.UID, pic);
+                                        LogHelper.Info("动态更新", $"{dy.UserName}的动态有更新，id={dy.LastDynamicID}，路径={pic}");
+                                    }
                                 }
                             }
 
                             foreach (var live in LiveStreams)// 直播检查
                             {
-                                string pic = "";
+                                string pic = null;
                                 try
                                 {
                                     if (live.FetchRoomInfo())
@@ -107,6 +112,7 @@ namespace BilibiliMonitor
                                 }
                                 catch (Exception e)
                                 {
+                                    pic = null;
                                     live.ReFetchFlag = true;
                                     LogHelper.Info("直播更新", $"错误次数={livestreamErrCount},exc={e.Message + e.StackTrace}", false);
                                     livestreamErrCount++;
@@ -115,19 +121,23 @@ namespace BilibiliMonitor
                                         LogHelper.Info("直播更新", "错误次数超过上限", false);
                                         live.ReFetchFlag = false;
                                         livestreamErrCount = 1;
+                                        pic = "";
                                     }
                                 }
                                 finally
                                 {
-                                    OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
-                                    LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
+                                    if(pic != null)
+                                    {
+                                        OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
+                                        LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
+                                    }
                                 }
                             }
 
                             List<int> removeBangumiList = new();
                             foreach (var bangumi in Bangumis)// 番剧检查
                             {
-                                string pic = "";
+                                string pic = null;
                                 try
                                 {
                                     if (bangumi.FetchEPDetail())
@@ -147,6 +157,7 @@ namespace BilibiliMonitor
                                 }
                                 catch (Exception e)
                                 {
+                                    pic = null;
                                     bangumi.ReFetchFlag = true;
                                     LogHelper.Info("番剧更新", $"错误次数={bangumiErrCount},exc={e.Message + e.StackTrace}", false);
                                     bangumiErrCount++;
@@ -155,12 +166,16 @@ namespace BilibiliMonitor
                                         LogHelper.Info("番剧更新", "错误次数超过上限", false);
                                         bangumi.ReFetchFlag = false;
                                         bangumiErrCount = 1;
+                                        pic = "";
                                     }
                                 }
                                 finally
                                 {
-                                    OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
-                                    LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
+                                    if(pic != null)
+                                    {
+                                        OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
+                                        LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
+                                    }
                                 }
                             }
 
