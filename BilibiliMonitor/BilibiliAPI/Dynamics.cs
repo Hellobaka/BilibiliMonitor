@@ -56,8 +56,12 @@ namespace BilibiliMonitor.BilibiliAPI
             string url = string.Format(BaseUrl, UID);
             string text = Helper.Get(url).Result;
             // string text = File.ReadAllText(@"E:\DO\dy4.json");
-            var json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
-            if (json == null)
+            DynamicModel.Main json = null;
+            try
+            {
+                json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
+            }
+            catch
             {
                 LogHelper.Info("拉取动态列表", $"username={UserName}, json={text}");
                 return false;
@@ -364,7 +368,6 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{item.id_str}.png";
             main.Save(Path.Combine(path, filename));
-            GC.Collect();
             return Path.Combine("BiliBiliMonitor", "Dynamic", filename);
         }
 

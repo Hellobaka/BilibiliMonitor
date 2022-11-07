@@ -58,8 +58,17 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (BangumiInfo == null) return false;
             string text = Helper.Get(baseEpURL + SeasonID).Result;
-            var json = JsonConvert.DeserializeObject<BangumiModel.Main>(text);
-            if(json.code == 0)
+            BangumiModel.Main json = null;
+            try
+            {
+                json = JsonConvert.DeserializeObject<BangumiModel.Main>(text);
+            }
+            catch
+            {
+                LogHelper.Info("拉取番剧状态", $"Name={Name}, json={text}");
+                return false;
+            }
+            if (json.code == 0)
             {
                 LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
                 if (json.result.main_section == null) return false;
@@ -141,7 +150,6 @@ namespace BilibiliMonitor.BilibiliAPI
             Directory.CreateDirectory(path);
             string filename = $"{LastEp.id}.png";
             main.Save(Path.Combine(path, filename));
-            GC.Collect();
             return Path.Combine("BiliBiliMonitor", "Bangumi", filename);
         }
     }

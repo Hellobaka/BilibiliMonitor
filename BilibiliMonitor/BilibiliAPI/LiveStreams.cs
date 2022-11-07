@@ -10,6 +10,8 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Path = System.IO.Path;
 using System;
+using static System.Net.Mime.MediaTypeNames;
+using Image = SixLabors.ImageSharp.Image;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -41,14 +43,23 @@ namespace BilibiliMonitor.BilibiliAPI
                 Name = json.data.info.uname;
                 RoomID = json.data.room_id;
                 UserInfo = json.data;
-            }            
+            }
         }
         public bool FetchRoomInfo()
         {
             if (ReFetchFlag) { ReFetchFlag = false; return true; }
             string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
             if (string.IsNullOrEmpty(text)) return false;
-            var json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
+            LiveStreamsModel.RoomInfo_Main json = null;
+            try
+            {
+                json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
+            }
+            catch
+            {
+                LogHelper.Info("拉取直播状态", $"Name={Name}, json={text}");
+                return false;
+            }
             if (json.code == 0)
             {
                 RoomInfo = json.data;
@@ -60,7 +71,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
                         return true;
-                    }                    
+                    }
                 }
                 LogHelper.Info("直播检查", $"{Name}直播状态更新成功");
             }
@@ -75,31 +86,41 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             if (RoomInfo == null || UserInfo == null) return string.Empty;
             using Image<Rgba32> main = new(652, 198, Color.White);
-            //TODO: 奇怪目录占用
-            using Image avatar =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", UserInfo.info.face.GetFileNameFromURL()));
-            using Image cover =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", RoomInfo.user_cover.GetFileNameFromURL()));
+            string avatarPath = Path.Combine(UpdateChecker.BasePath, "tmp", UserInfo.info.face.GetFileNameFromURL());
+            string coverPath = Path.Combine(UpdateChecker.BasePath, "tmp", RoomInfo.user_cover.GetFileNameFromURL());
+
+            Image avatar = null;
+            Image cover = null;
+            try
+            {
+                avatar = Image.Load(avatarPath);
+                cover = Image.Load(coverPath);
+            }
+            catch (Exception e)
+            {
+                LogHelper.Info("生成直播图像", $"name={Name}, avatar={avatarPath}, cover={coverPath}");
+                throw e;
+            }
 
             avatar.Mutate(x => x.Resize(48, 48));
-            cover.Mutate(x => x.Resize((int) (cover.Width / (cover.Height / 198.0)), 198));
+            cover.Mutate(x => x.Resize((int)(cover.Width / (cover.Height / 198.0)), 198));
 
             main.Mutate(x => x.DrawImage(cover, new Point(0, 0), 1));
             using Image<Rgba32> Info = new(652 - cover.Width - 20, 178, Color.White);
-            
+
             using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
             IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
             avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            Info.Mutate(x=>x.DrawImage(avatarFrame, new Point(0,0), 1));
+            Info.Mutate(x => x.DrawImage(avatarFrame, new Point(0, 0), 1));
 
             Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
             TextOptions option = new TextOptions(smallFont);
             PointF point = new(48 + 5, 15);
             var size = TextMeasurer.Measure(Name, option);
-            Info.Mutate(x=>x.DrawText(Name, smallFont, Color.Black, point));
+            Info.Mutate(x => x.DrawText(Name, smallFont, Color.Black, point));
             point = new(point.X + size.Width + 5, point.Y);
-            Info.Mutate(x=>x.DrawText("开播了", smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x => x.DrawText("开播了", smallFont, Rgba32.ParseHex("#99a2aa"), point));
             point = new(10, point.Y + 60);
             option = new TextOptions(bigFont)
             {
@@ -108,22 +129,23 @@ namespace BilibiliMonitor.BilibiliAPI
                 WrappingLength = Info.Width,
                 Origin = point
             };
-            Info.Mutate(x=>x.DrawText(option, RoomInfo.title, Color.Black));
+            Info.Mutate(x => x.DrawText(option, RoomInfo.title, Color.Black));
             point = new(10, 178 - 20);
-            Info.Mutate(x=>x.DrawText(RoomInfo.area_name, smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x => x.DrawText(RoomInfo.area_name, smallFont, Rgba32.ParseHex("#99a2aa"), point));
             option = new TextOptions(smallFont);
             size = TextMeasurer.Measure(RoomInfo.area_name, option);
             point = new(point.X + size.Width, point.Y);
-            Info.Mutate(x=>x.DrawText($" · {RoomInfo.live_time}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
+            Info.Mutate(x => x.DrawText($" · {RoomInfo.live_time}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
 
-            point = new(cover.Width + 10 ,10);
-            main.Mutate(x=>x.DrawImage(Info, (Point) point, 1));
+            point = new(cover.Width + 10, 10);
+            main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
 
             string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "LiveStream");
             Directory.CreateDirectory(path);
             string filename = $"{RoomID}.png";
             main.Save(Path.Combine(path, filename));
-            GC.Collect();
+            avatar.Dispose();
+            cover.Dispose();
             return Path.Combine("BiliBiliMonitor", "LiveStream", filename);
         }
 
