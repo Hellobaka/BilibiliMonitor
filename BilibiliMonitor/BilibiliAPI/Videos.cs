@@ -42,6 +42,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if (url.StartsWith("bv") || url.StartsWith("BV") || url.StartsWith("av") || url.StartsWith("AV"))
                 return url;
             if (string.IsNullOrEmpty(url)) return string.Empty;
+            url = url.Trim();
             //LogHelper.Info("视频解析", url);
             if (url.Contains("b23.tv"))
             {
@@ -62,20 +63,12 @@ namespace BilibiliMonitor.BilibiliAPI
             //LogHelper.Info("视频解析", url);
             if (url.Contains("bilibili.com/video"))
             {
-                if (url.Contains("p="))
-                {
-                    url = url.Split('?').First();
-                }
-                if (url.EndsWith("/")) url = url.Substring(0, url.Length - 1);
-                var vid = url.Split('/').Last();
-                if(vid.Contains("?"))
-                {
-                    vid = vid.Split('?').First();
-                }
-                if(vid.StartsWith("AV") || vid.StartsWith("av"))
+                string vid = url.Split('/').First(x => x.ToLower().StartsWith("av") || x.StartsWith("BV"));
+                if(vid.StartsWith("av"))
                 {
                     vid = vid.Substring(2);
                 }
+                vid = vid.Split('?').First();
                 return vid;
             }
             else
