@@ -54,6 +54,10 @@ namespace BilibiliMonitor.BilibiliAPI
             try
             {
                 json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
+                if (json == null)
+                {
+                    throw new Exception("json err");
+                }
             }
             catch
             {

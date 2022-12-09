@@ -60,6 +60,10 @@ namespace BilibiliMonitor.BilibiliAPI
             try
             {
                 json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
+                if(json == null)
+                {
+                    throw new Exception("json err");
+                }
             }
             catch
             {
