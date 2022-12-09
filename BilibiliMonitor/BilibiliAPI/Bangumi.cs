@@ -23,6 +23,7 @@ namespace BilibiliMonitor.BilibiliAPI
         public int SeasonID { get; set; }
         public string Name { get; set; }
         public int LastID { get; set; }
+        public List<int> UsedID { get; set; } = new();
         public BangumiModel.DetailInfo BangumiInfo { get; set; }
         public BangumiModel.Episode LastEp { get; set; }
         public bool ReFetchFlag { get; set; }
@@ -40,7 +41,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 LogHelper.Info("拉取番剧详情", $"name={Name}, json={text}", false);
                 return false;
             }
-            if (json is {code: 0})
+            if (json is { code: 0 })
             {
                 BangumiInfo = json;
                 Name = json.result.title;
@@ -73,11 +74,12 @@ namespace BilibiliMonitor.BilibiliAPI
                 LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
                 if (json.result.main_section == null) return false;
                 LastEp = json.result.main_section.episodes.Last();
-                if (ReFetchFlag || LastEp.id != LastID)
+                if ((ReFetchFlag || LastEp.id != LastID) && UsedID.Any(x => x == LastID) is false)
                 {
-                    LogHelper.Info("更新番剧信息", "新的剧集出现了");                    
+                    LogHelper.Info("更新番剧信息", "新的剧集出现了");
                     LastID = json.result.main_section.episodes.Last().id;
-                    FetchInfo(); 
+                    UsedID.Add(LastID);
+                    FetchInfo();
                     ReFetchFlag = false;
                     if (init)//初始化
                     {
@@ -142,7 +144,7 @@ namespace BilibiliMonitor.BilibiliAPI
             size = TextMeasurer.Measure(epCount, option);
             point = new(point.X + size.Width, point.Y);
             Info.Mutate(x => x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
-            
+
             point = new(cover.Width + 10, 10);
             main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
 
