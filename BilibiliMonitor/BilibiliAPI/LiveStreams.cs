@@ -20,7 +20,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseUIDQueryURL = "https://api.live.bilibili.com/live_user/v1/Master/info?uid=";
         private static string BaseRoomInfoURL = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
         private static string BasePicURL = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
-        public int UID { get; set; }
+        public long UID { get; set; }
         public int RoomID { get; set; }
         public string Name { get; set; }
         public bool Streaming { get => StreamingStatus == 1; }
@@ -29,7 +29,7 @@ namespace BilibiliMonitor.BilibiliAPI
         public LiveStreamsModel.UserInfo UserInfo { get; set; }
         public bool ReFetchFlag { get; set; }
 
-        public LiveStreams(int uid)
+        public LiveStreams(long uid)
         {
             UID = uid;
             FetchUserInfo();

@@ -20,7 +20,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static string BaseUrl { get; set; } =
             "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
 
-        public int UID { get; set; }
+        public long UID { get; set; }
         public string LastDynamicID { get; set; }
         public string UserName { get; set; }
         private static FontFamily EmojiFont { get; set; }
@@ -32,7 +32,7 @@ namespace BilibiliMonitor.BilibiliAPI
             get { return DynamicList.Find(x => x.id_str == LastDynamicID); }
         }
 
-        public Dynamics(int uid)
+        public Dynamics(long uid)
         {
             UID = uid;
             EmojiFont = new FontCollection().Add(Path.Combine(UpdateChecker.BasePath, "Assets", "seguiemj.ttf"));

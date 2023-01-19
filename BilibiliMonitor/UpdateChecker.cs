@@ -21,7 +21,7 @@ namespace BilibiliMonitor
         public List<LiveStreams> LiveStreams { get; set; } = new();
         public List<Bangumi> Bangumis { get; set; } = new();
 
-        public delegate void DynamicUpdateHandler(DynamicModel.Item item, int id, string picPath);
+        public delegate void DynamicUpdateHandler(DynamicModel.Item item, long id, string picPath);
         public event DynamicUpdateHandler OnDynamic;
         public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo roomInfo, LiveStreamsModel.UserInfo userInfo, string picPath);
         public event StreamOpenHandler OnStream;
@@ -198,7 +198,7 @@ namespace BilibiliMonitor
         int bangumiErrCount = 0;
         int dynamicErrCount = 0;
         int livestreamErrCount = 0;
-        public Dynamics AddDynamic(int uid)
+        public Dynamics AddDynamic(long uid)
         {
             if (Dynamics.Any(x => x.UID == uid))
             {
@@ -210,7 +210,7 @@ namespace BilibiliMonitor
             return dy;
         }
 
-        public void RemoveDynamic(int uid)
+        public void RemoveDynamic(long uid)
         {
             if (!Dynamics.Any(x => x.UID == uid))
             {
@@ -219,7 +219,7 @@ namespace BilibiliMonitor
 
             Dynamics.Remove(Dynamics.First(x => x.UID == uid));
         }
-        public LiveStreams AddStream(int uid)
+        public LiveStreams AddStream(long uid)
         {
             if (LiveStreams.Any(x => x.UID == uid))
             {
@@ -231,7 +231,7 @@ namespace BilibiliMonitor
             return live;
         }
 
-        public void RemoveStream(int uid)
+        public void RemoveStream(long uid)
         {
             if (!LiveStreams.Any(x => x.UID == uid))
             {
@@ -255,18 +255,18 @@ namespace BilibiliMonitor
             if (Bangumis.Any(x => x.SeasonID == seasonId) is false) return;
             Bangumis.Remove(Bangumis.First(x => x.SeasonID == seasonId));
         }
-        public List<(int, string, bool)> GetStreamList()
+        public List<(long, string, bool)> GetStreamList()
         {
-            List<(int, string, bool)> ls = new();
+            List<(long, string, bool)> ls = new();
             foreach (var item in LiveStreams)
             {
                 ls.Add((item.UID, item.Name, item.Streaming));
             }
             return ls;
         }
-        public List<(int, string)> GetDynamicList()
+        public List<(long, string)> GetDynamicList()
         {
-            List<(int, string)> ls = new();
+            List<(long, string)> ls = new();
             foreach (var item in Dynamics)
             {
                 ls.Add((item.UID, item.UserName));
@@ -282,7 +282,7 @@ namespace BilibiliMonitor
             }
             return ls;
         }
-        public Dynamics GetDynamic(int uid)
+        public Dynamics GetDynamic(long uid)
         {
             foreach (var item in Dynamics)
             {
