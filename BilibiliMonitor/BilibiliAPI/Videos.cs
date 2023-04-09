@@ -26,7 +26,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static Dictionary<string, string> shortURLCache { get; set; } = new();
         public static string ParseURLFromXML(string xml)
         {
-            var match = Regex.Match(xml, "(https://b23\\.tv/.*?)\\?share_medium=");
+            var match = Regex.Match(xml, "(b23\\.tv.*?)\"");
             if (match.Success)
             {
                 string res = ParseURL(match.Groups[1].Value);
@@ -46,12 +46,16 @@ namespace BilibiliMonitor.BilibiliAPI
             //LogHelper.Info("视频解析", url);
             if (url.Contains("b23.tv"))
             {
+                url = url.Replace("\\", "");
                 var match = Regex.Match(url, "https://b23\\.tv/.*");
                 if (match.Success)
                     url = match.Groups[match.Groups.Count - 1].Value;
                 url = url.Split('?').First();
                 if (shortURLCache.ContainsKey(url)) return shortURLCache[url];
-                
+                if(url.StartsWith("http") is false)
+                {
+                    url = "https://" + url;
+                }
                 using var http = new HttpClient();
                 var r = http.GetAsync(url);
                 r.Wait();

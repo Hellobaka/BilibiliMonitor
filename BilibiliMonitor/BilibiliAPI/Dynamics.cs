@@ -67,7 +67,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             catch
             {
-                LogHelper.Info("拉取动态列表", $"username={UserName}, json={text}");
+                LogHelper.Info("拉取动态列表异常", $"username={UserName}, json={text}");
                 return false;
             }
 
