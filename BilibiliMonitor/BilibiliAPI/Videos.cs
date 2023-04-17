@@ -100,7 +100,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             return null;
         }
-        private static UserInfoModel.Data GetUserInfo(int mid)
+        private static UserInfoModel.Data GetUserInfo(long mid)
         {
             string url = string.Format(BaseUserInfoURL, mid);
             var json = JsonConvert.DeserializeObject<UserInfoModel.Main>(Helper.Get(url).Result);
