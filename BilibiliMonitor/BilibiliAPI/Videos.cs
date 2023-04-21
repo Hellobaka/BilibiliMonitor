@@ -14,6 +14,7 @@ using Path = System.IO.Path;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Net.Http;
+using static BilibiliMonitor.Models.LiveStreamsModel;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -174,10 +175,25 @@ namespace BilibiliMonitor.BilibiliAPI
             main.Mutate(x => x.DrawText($"{user.card.fans.ParseNum2Chinese()}粉丝 {user.archive_count.ParseNum2Chinese()}个投稿", smallFont, gray, point));
             point = new(10, point.Y + 30);
 
-            option = new TextOptions(bigFont);
+            option = new TextOptions(bigFont)
+            {
+                TextAlignment = TextAlignment.Start,
+                VerticalAlignment = VerticalAlignment.Center,
+                WrappingLength = main.Width - 10,
+                Origin = point
+            };
             size = TextMeasurer.Measure(video.title, option);
-            main.Mutate(x => x.DrawText(video.title, bigFont, Color.Black, point));
-            point = new PointF(10, point.Y + size.Height + 9);
+            int padding = (int)point.X, chargap = 1, maxWidth = 632;
+            float maxCharWidth = 0, charHeight = 0;
+            main.Mutate(x =>
+            {
+                foreach (var c in video.title)
+                {
+                    DrawString(x, c, Color.Black, ref point, option, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
+                }
+            });
+            // main.Mutate(x => x.DrawText(video.title, bigFont, Color.Black, point));
+            point = new PointF(10, point.Y + 9 + charHeight);
 
             using Image play = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "play.png"));
             play.Mutate(x => x.Resize(16, 16));
@@ -214,8 +230,11 @@ namespace BilibiliMonitor.BilibiliAPI
             main.Mutate(x => x.DrawText($"AV{video.aid}", smallFont, gray, point));
 
             point = new(10, point.Y + 30);
-            int padding = (int)point.X, chargap = 1, maxWidth = 632;
-            float maxCharWidth = 0, charHeight = 0;
+            padding = (int)point.X; 
+            chargap = 1; 
+            maxWidth = 632;
+            maxCharWidth = 0;
+            charHeight = 0;
             main.Mutate(x =>
             {
                 foreach (var c in video.desc)
