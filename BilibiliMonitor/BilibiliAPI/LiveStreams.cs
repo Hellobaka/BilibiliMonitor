@@ -37,6 +37,7 @@ namespace BilibiliMonitor.BilibiliAPI
         public void FetchUserInfo()
         {
             string text = Helper.Get(BaseUIDQueryURL + UID).Result;
+            //string text = File.ReadAllText(@"E:\DO\live.txt");
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.UserInfo_Main>(text);
             if (json.code == 0)
             {
@@ -130,7 +131,7 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 TextAlignment = TextAlignment.Start,
                 VerticalAlignment = VerticalAlignment.Center,
-                WrappingLength = Info.Width,
+                WrappingLength = Info.Width - 10,
                 Origin = point
             };
             Info.Mutate(x => x.DrawText(option, RoomInfo.title, Color.Black));

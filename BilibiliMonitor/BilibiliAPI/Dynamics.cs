@@ -55,7 +55,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             string url = string.Format(BaseUrl, UID);
             string text = Helper.Get(url).Result;
-            // string text = File.ReadAllText(@"E:\DO\dy4.json");
+            //string text = File.ReadAllText(@"E:\DO\dy.txt");
             DynamicModel.Main json = null;
             try
             {
@@ -173,9 +173,14 @@ namespace BilibiliMonitor.BilibiliAPI
                         Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
 
-                foreach (var i in item.modules.module_dynamic.desc?.rich_text_nodes)
+                if(item.modules.module_dynamic != null &&
+                    item.modules.module_dynamic.desc != null &&
+                    item.modules.module_dynamic.desc.rich_text_nodes != null)
                 {
-                    _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+                    foreach (var i in item.modules.module_dynamic.desc.rich_text_nodes)
+                    {
+                        _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+                    }
                 }
 
                 int picCount = item.modules.module_dynamic.major?.draw?.items.Length ?? 0;

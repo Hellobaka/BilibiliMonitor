@@ -27,7 +27,7 @@ namespace BilibiliMonitor.Models
 
         public class Info
         {
-            public int uid { get; set; }
+            public long uid { get; set; }
             public string uname { get; set; }
             public string face { get; set; }
             public Official_Verify official_verify { get; set; }
@@ -71,8 +71,8 @@ namespace BilibiliMonitor.Models
 
         public class RoomInfo
         {
-            public int uid { get; set; }
-            public int room_id { get; set; }
+            public long uid { get; set; }
+            public long room_id { get; set; }
             public int short_id { get; set; }
             public int attention { get; set; }
             public int online { get; set; }
