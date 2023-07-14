@@ -54,7 +54,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             string url = string.Format(BaseUrl, UID);
-            string text = Helper.Get(url).Result;
+            string text = Helper.Get(url, Config.GetConfig<string>("Cookies")).Result;
             //string text = File.ReadAllText(@"E:\DO\dy.txt");
             DynamicModel.Main json = null;
             try
@@ -190,7 +190,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         if (i.src.Contains(".gif")) continue;
                         string webp = ".webp";
-                        if (i.height / (double) i.width > 2)
+                        if (i.height / (double) i.width > 3)
                         {
                             if (picCount == 1)
                                 webp = "240w_320h_!header" + webp;
@@ -201,14 +201,14 @@ namespace BilibiliMonitor.BilibiliAPI
                         {
                             if (picCount == 1)
                             {
-                                if (i.width > i.height)
-                                {
-                                    webp = "320w_180h_1e_1c" + webp;
-                                }
-                                else
-                                {
-                                    webp = "480w_640h_1e_1c" + webp;
-                                }
+                                //if (i.width > i.height)
+                                //{
+                                //    webp = "320w_180h_1e_1c" + webp;
+                                //}
+                                //else
+                                //{
+                                //    webp = "480w_640h_1e_1c" + webp;
+                                //}
                             }
                             else
                                 webp = "104w_104h_1e_1c" + webp;
@@ -760,6 +760,13 @@ namespace BilibiliMonitor.BilibiliAPI
                 if (i.src.Contains(".gif")) return img;
                 using Image image = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                     i.src.GetFileNameFromURL()));
+                if (image.Width > 500)
+                {
+                    image.Mutate(x =>
+                    {
+                        x.Resize(500, (int)(image.Height * (500 / (float)image.Width)));
+                    });
+                }
                 img.DrawImage(image, (Point) point, 1);
                 point = new(startX, point.Y + image.Height);
             }

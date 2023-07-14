@@ -39,7 +39,7 @@ namespace BilibiliMonitor.BilibiliAPI
             string text = Helper.Get(BaseUIDQueryURL + UID).Result;
             //string text = File.ReadAllText(@"E:\DO\live.txt");
             var json = JsonConvert.DeserializeObject<LiveStreamsModel.UserInfo_Main>(text);
-            if (json.code == 0)
+            if (json != null && json.code == 0)
             {
                 Name = json.data.info.uname;
                 RoomID = json.data.room_id;
