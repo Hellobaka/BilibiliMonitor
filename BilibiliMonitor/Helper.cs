@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Numerics;
 using System.Text;
@@ -20,11 +21,27 @@ namespace BilibiliMonitor
     {
         public static long TimeStamp => (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
         public static DateTime TimeStamp2DateTime(long timestamp) => new DateTime(1970, 1, 1, 8, 0, 0, DateTimeKind.Local).AddSeconds(timestamp);
-        public static async Task<string> Get(string url)
+        public static string UA { get; set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62";
+        public static async Task<string> Get(string url, string cookie = "")
         {
             try
             {
-                using var http = new HttpClient();
+                HttpClientHandler handler = new();
+                handler.CookieContainer = new CookieContainer();
+                if (!string.IsNullOrEmpty(cookie))
+                {
+                    foreach (var item in cookie.Split(';'))
+                    {
+                        if (string.IsNullOrEmpty(item) is false)
+                        {
+                            string[] c = item.Split('=');
+                            handler.CookieContainer.Add(new Uri("https://www.bilibili.com/"), new Cookie(c.First(), c.Last()));
+                        }
+                    }
+                }
+
+                using var http = new HttpClient(handler);
+                http.DefaultRequestHeaders.Add("user-agent", UA);
                 var r = await http.GetAsync(url);
                 r.Content.Headers.ContentType.CharSet = "UTF-8";
                 return await r.Content.ReadAsStringAsync();
