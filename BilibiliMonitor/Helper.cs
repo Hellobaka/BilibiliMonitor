@@ -35,7 +35,7 @@ namespace BilibiliMonitor
                         if (string.IsNullOrEmpty(item) is false)
                         {
                             string[] c = item.Split('=');
-                            handler.CookieContainer.Add(new Uri("https://www.bilibili.com/"), new Cookie(c.First(), c.Last()));
+                            handler.CookieContainer.Add(new Uri("https://api.bilibili.com/"), new Cookie(c.First(), c.Last()));
                         }
                     }
                 }

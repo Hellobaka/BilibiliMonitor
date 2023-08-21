@@ -20,6 +20,7 @@ namespace BilibiliMonitor
         public List<Dynamics> Dynamics { get; set; } = new();
         public List<LiveStreams> LiveStreams { get; set; } = new();
         public List<Bangumi> Bangumis { get; set; } = new();
+        public string Cookies { get; set; } = "";
 
         public delegate void DynamicUpdateHandler(DynamicModel.Item item, long id, string picPath);
         public event DynamicUpdateHandler OnDynamic;
