@@ -78,7 +78,10 @@ namespace BilibiliMonitor.BilibiliAPI
                         return true;
                     }
                 }
-                LogHelper.Info("直播检查", $"{Name}直播状态更新成功");
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("直播检查", $"{Name}直播状态更新成功");
+                }
             }
             else
             {

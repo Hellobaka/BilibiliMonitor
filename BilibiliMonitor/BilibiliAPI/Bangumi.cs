@@ -44,11 +44,12 @@ namespace BilibiliMonitor.BilibiliAPI
             if (json is { code: 0 })
             {
                 BangumiInfo = json;
-                Name = json.result.title;
-                LogHelper.Info("LastID", $"{json.result.episodes.Length}: {LastID}");
-                // LastEp = json.result.episodes.FirstOrDefault(x=>x.episode_id == LastID.ToString());
-
-                LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
+                Name = json.result.title; 
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("LastID", $"{json.result.episodes.Length}: {LastID}");
+                    LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
+                }
                 return true;
             }
             LogHelper.Info("拉取番剧信息", text, false);
@@ -71,7 +72,11 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             if (json.code == 0)
             {
-                LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
+                }
+
                 if (json.result.main_section == null) return false;
                 LastEp = json.result.main_section.episodes.Last();
                 if ((ReFetchFlag || LastEp.id != LastID) && UsedID.Any(x => x == LastID) is false)
@@ -90,7 +95,10 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
                 return false;
             }
-            LogHelper.Info("更新番剧信息", text, false);
+            if (UpdateChecker.Instance.DebugMode)
+            {
+                LogHelper.Info("更新番剧信息", text, false);
+            }
             return false;
         }
         public void DownloadPic()

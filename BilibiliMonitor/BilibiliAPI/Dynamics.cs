@@ -84,8 +84,10 @@ namespace BilibiliMonitor.BilibiliAPI
                         UserName = DynamicList[0].modules.module_author.name;
                     }
                 }
-
-                LogHelper.Info("动态检查", $"{UserName}的动态列表拉取成功");
+                if(UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("动态检查", $"{UserName}的动态列表拉取成功");
+                }
                 if (LastDynamicID != max)
                 {
                     LastDynamicID = max;
