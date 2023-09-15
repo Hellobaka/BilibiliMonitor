@@ -79,14 +79,14 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            RichTextOptions option = new(smallFont);
+            TextOptions option = new(smallFont);
             PointF point = new(48 + 5, 15);
-            var size = TextMeasurer.MeasureSize(Name, option);
+            var size = TextMeasurer.Measure(Name, option);
             Info.Mutate(x => x.DrawText(Name, smallFont, Color.Black, point));
             point = new(point.X + size.Width + 5, point.Y);
             Info.Mutate(x => x.DrawText("更新了", smallFont, Rgba32.ParseHex("#99a2aa"), point));
             point = new(10, point.Y + 60);
-            option = new RichTextOptions(bigFont)
+            option = new TextOptions(bigFont)
             {
                 TextAlignment = TextAlignment.Start,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -97,8 +97,8 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(10, 178 - 20);
             string epCount = $"第{LastEp.title}话";
             Info.Mutate(x => x.DrawText(epCount, smallFont, Rgba32.ParseHex("#99a2aa"), point));
-            option = new RichTextOptions(smallFont);
-            size = TextMeasurer.MeasureSize(epCount, option);
+            option = new TextOptions(smallFont);
+            size = TextMeasurer.Measure(epCount, option);
             point = new(point.X + size.Width, point.Y);
             Info.Mutate(x => x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
 

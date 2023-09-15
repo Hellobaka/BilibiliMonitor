@@ -477,7 +477,7 @@ namespace BilibiliMonitor.BilibiliAPI
             FontRectangle charSize = new();
             try
             {
-                charSize = TextMeasurer.MeasureSize(text, option);
+                charSize = TextMeasurer.Measure(text, option);
             }
             catch
             {
@@ -519,7 +519,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                point.X += charSize.Width;
+                point.X += charSize.Width + charGap;
             }
 
             return totalHeight;
@@ -539,7 +539,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = 0, chargap = 1, maxWidth = 470;
+            int padding = 0, chargap = 0, maxWidth = 470;
             float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
             using Image<Rgba32> textImg = new(maxWidth, 100, Rgba32.ParseHex("#FFFFFF00"));
             textImg.Mutate(x =>
@@ -610,7 +610,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 16, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
+            int padding = (int)point.X, chargap = 0, maxWidth = elementWidth - 28 + startX;
             float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 50)
             {
@@ -674,7 +674,7 @@ namespace BilibiliMonitor.BilibiliAPI
             p = new(p.X + 24 + 8, p.Y + 3);
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             main.Mutate(x => x.DrawText(item.modules.module_author.name, font, new Rgba32(0, 161, 214), p));
-            var charSize = TextMeasurer.MeasureSize(item.modules.module_author.name, new TextOptions(font));
+            var charSize = TextMeasurer.Measure(item.modules.module_author.name, new TextOptions(font));
             p = new(p.X + (int)charSize.Width + 8, p.Y);
 
             main.Mutate(x => x.DrawText(item.modules.module_author.pub_action, font, Color.Black, p));
@@ -729,7 +729,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
+            int padding = (int)point.X, chargap = 0, maxWidth = 610 - 12;
             float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
             foreach (var node in item.items[0].desc.rich_text_nodes)
             {
@@ -864,7 +864,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(point.X + 16 + 4, point.Y);
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
+            int padding = (int)point.X, chargap = 0, maxWidth = 610 - 12;
             float maxCharWidth = 0, charHeight = 0;
             foreach (var c in item.forward.count.ParseNum2Chinese())
             {
@@ -918,7 +918,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
+            int padding = (int)point.X, chargap = 0, maxWidth = elementWidth - 28 + startX;
             float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 42)
             {
@@ -993,7 +993,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font font;
             TextOptions options;
-            int chargap = 1, maxWidth = 459 + padding;
+            int chargap = 0, maxWidth = 459 + padding;
             float maxCharWidth = 0, charHeight = 0;
             if (item.modules.module_dynamic.topic != null)
             {

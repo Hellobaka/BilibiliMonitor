@@ -70,7 +70,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
             TextOptions option = new(smallFont);
             point = new(10 + 48 + 5, height + 12);
-            var size = TextMeasurer.MeasureSize(video.owner.name, option);
+            var size = TextMeasurer.Measure(video.owner.name, option);
             Color nameColor = string.IsNullOrEmpty(user.card.vip.nickname_color) ? Color.Black : Rgba32.ParseHex(user.card.vip.nickname_color);
             main.Mutate(x => x.DrawText(video.owner.name, midFont, nameColor, point));
             point = new(point.X, point.Y + size.Height + 7);
@@ -84,7 +84,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 WrappingLength = main.Width - 10,
                 Origin = point
             };
-            size = TextMeasurer.MeasureSize(video.title, option);
+            size = TextMeasurer.Measure(video.title, option);
             int padding = (int)point.X, chargap = 1, maxWidth = 632;
             float maxCharWidth = 0, charHeight = 0;
             main.Mutate(x =>
@@ -114,19 +114,19 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new PointF(point.X + play.Width + 2, point.Y);
             string playNum = Helper.ParseLongNumber(video.stat.view);
             option = new TextOptions(smallFont);
-            size = TextMeasurer.MeasureSize(playNum, option);
+            size = TextMeasurer.Measure(playNum, option);
             main.Mutate(x => x.DrawText(playNum, smallFont, gray, point));
             point = new(point.X + 10 + size.Width, point.Y);
             main.Mutate(x => x.DrawImage(danmaku, (Point)point, 1));
             point = new(point.X + danmaku.Width + 2, point.Y);
             string danmakuNum = Helper.ParseLongNumber(video.stat.danmaku);
-            size = TextMeasurer.MeasureSize(danmakuNum, option);
+            size = TextMeasurer.Measure(danmakuNum, option);
             main.Mutate(x => x.DrawText(danmakuNum, smallFont, gray, point));
             point = new PointF(point.X + size.Width + 10, point.Y);
             main.Mutate(x => x.DrawText(Helper.TimeStamp2DateTime(video.pubdate).ToString("G"), smallFont, gray, point));
 
             point = new(10, point.Y + 16 + 10);
-            size = TextMeasurer.MeasureSize(video.bvid, option);
+            size = TextMeasurer.Measure(video.bvid, option);
             main.Mutate(x => x.DrawText(video.bvid, smallFont, gray, point));
             point = new(point.X + size.Width + 10, point.Y);
             main.Mutate(x => x.DrawText($"AV{video.aid}", smallFont, gray, point));
@@ -148,7 +148,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             foreach (var item in tag)
             {
-                size = TextMeasurer.MeasureSize(item.tag_name, option);
+                size = TextMeasurer.Measure(item.tag_name, option);
                 if (point.X + size.Width + 14 > maxWidth)
                 {
                     point = new(10, point.Y + size.Height + 8 + 10);
@@ -164,22 +164,22 @@ namespace BilibiliMonitor.BilibiliAPI
             PointF imgPoint = new(point.X + 20, point.Y + 20);
             main.Mutate(x => x.DrawImage(like, (Point)imgPoint, 1));
             string text = Helper.ParseLongNumber(video.stat.like);
-            size = TextMeasurer.MeasureSize(text, option);
+            size = TextMeasurer.Measure(text, option);
             main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(coin, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.coin);
-            size = TextMeasurer.MeasureSize(text, option);
+            size = TextMeasurer.Measure(text, option);
             main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(favorite, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.favorite);
-            size = TextMeasurer.MeasureSize(text, option);
+            size = TextMeasurer.Measure(text, option);
             main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(forward, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.reply);
-            size = TextMeasurer.MeasureSize(text, option);
+            size = TextMeasurer.Measure(text, option);
             main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
 
             point = new(10, imgPoint.Y + 48 + 20 + 20);
@@ -311,7 +311,7 @@ namespace BilibiliMonitor.BilibiliAPI
             FontRectangle charSize = new();
             try
             {
-                charSize = TextMeasurer.MeasureSize(text, option);
+                charSize = TextMeasurer.Measure(text, option);
             }
             catch
             {
