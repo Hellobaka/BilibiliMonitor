@@ -79,7 +79,7 @@
         {
             public string card_url { get; set; }
             public Fan fan { get; set; }
-            public int id { get; set; }
+            public long id { get; set; }
             public string jump_url { get; set; }
             public string name { get; set; }
             public int type { get; set; }
@@ -141,7 +141,7 @@
         }
         public class Topic
         {
-            public int id { get; set; }
+            public long id { get; set; }
             public string jump_url { get; set; }
             public string name { get; set; }
         }
@@ -239,7 +239,7 @@
 
         public class Draw
         {
-            public int id { get; set; }
+            public long id { get; set; }
             public Item1[] items { get; set; }
         }
 
@@ -368,7 +368,7 @@
         {
             public string action_url { get; set; }
             public string end_url { get; set; }
-            public int id { get; set; }
+            public long id { get; set; }
             public string start_url { get; set; }
         }
 
