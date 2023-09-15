@@ -38,7 +38,10 @@ namespace BilibiliMonitor.BilibiliAPI
             var json = JsonConvert.DeserializeObject<BangumiModel.DetailInfo>(text);
             if (json == null)
             {
-                LogHelper.Info("拉取番剧详情", $"name={Name}, json={text}", false);
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("拉取番剧详情", $"name={Name}, json={text}", false);
+                }
                 return false;
             }
             if (json is { code: 0 })
@@ -67,7 +70,10 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             catch
             {
-                LogHelper.Info("拉取番剧状态", $"Name={Name}, json={text}");
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("拉取番剧状态", $"Name={Name}, json={text}");
+                }
                 return false;
             }
             if (json.code == 0)
@@ -130,14 +136,14 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            TextOptions option = new TextOptions(smallFont);
+            RichTextOptions option = new RichTextOptions(smallFont);
             PointF point = new(48 + 5, 15);
-            var size = TextMeasurer.Measure(Name, option);
+            var size = TextMeasurer.MeasureSize(Name, option);
             Info.Mutate(x => x.DrawText(Name, smallFont, Color.Black, point));
             point = new(point.X + size.Width + 5, point.Y);
             Info.Mutate(x => x.DrawText("更新了", smallFont, Rgba32.ParseHex("#99a2aa"), point));
             point = new(10, point.Y + 60);
-            option = new TextOptions(bigFont)
+            option = new RichTextOptions(bigFont)
             {
                 TextAlignment = TextAlignment.Start,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -148,8 +154,8 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(10, 178 - 20);
             string epCount = $"第{LastEp.title}话";
             Info.Mutate(x => x.DrawText(epCount, smallFont, Rgba32.ParseHex("#99a2aa"), point));
-            option = new TextOptions(smallFont);
-            size = TextMeasurer.Measure(epCount, option);
+            option = new RichTextOptions(smallFont);
+            size = TextMeasurer.MeasureSize(epCount, option);
             point = new(point.X + size.Width, point.Y);
             Info.Mutate(x => x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
 

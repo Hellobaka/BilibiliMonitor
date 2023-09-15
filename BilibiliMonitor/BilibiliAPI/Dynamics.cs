@@ -60,14 +60,17 @@ namespace BilibiliMonitor.BilibiliAPI
             try
             {
                 json = JsonConvert.DeserializeObject<DynamicModel.Main>(text);
-                if(json == null)
+                if (json == null)
                 {
                     throw new Exception("json err");
                 }
             }
             catch
             {
-                LogHelper.Info("拉取动态列表异常", $"username={UserName}, json={text}");
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("拉取动态列表异常", $"username={UserName}, json={text}");
+                }
                 return false;
             }
 
@@ -84,7 +87,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         UserName = DynamicList[0].modules.module_author.name;
                     }
                 }
-                if(UpdateChecker.Instance.DebugMode)
+                if (UpdateChecker.Instance.DebugMode)
                 {
                     LogHelper.Info("动态检查", $"{UserName}的动态列表拉取成功");
                 }
@@ -175,7 +178,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
                 }
 
-                if(item.modules.module_dynamic != null &&
+                if (item.modules.module_dynamic != null &&
                     item.modules.module_dynamic.desc != null &&
                     item.modules.module_dynamic.desc.rich_text_nodes != null)
                 {
@@ -192,7 +195,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     {
                         if (i.src.Contains(".gif")) continue;
                         string webp = ".webp";
-                        if (i.height / (double) i.width > 3)
+                        if (i.height / (double)i.width > 3)
                         {
                             if (picCount == 1)
                                 webp = "240w_320h_!header" + webp;
@@ -266,7 +269,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
             //TODO: 未知内存溢出
             using Image<Rgba32> background = new(632, 30000, Color.White);
-            
+
             int left = 78;
             //TODO: 提取方法
             //头像
@@ -278,7 +281,7 @@ namespace BilibiliMonitor.BilibiliAPI
             IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
             avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
             background.Mutate(x => x.DrawImage(avatarFrame, new Point(14, 14), 1));
-            
+
             if (!string.IsNullOrWhiteSpace(item.modules.module_author.pendant.image))
             {
                 using Image pendant = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
@@ -371,7 +374,7 @@ namespace BilibiliMonitor.BilibiliAPI
             background.Mutate(x => DrawInteractive(item.modules.module_interaction, x, ref point));
             background.Mutate(x => DrawStat(item.modules.module_stat, x, ref point));
 
-            background.Mutate(x => x.Crop(background.Width, (int) point.Y + padding));
+            background.Mutate(x => x.Crop(background.Width, (int)point.Y + padding));
             main.Mutate(x => x.Crop(main.Width, background.Height + padding * 2));
             main.Mutate(x => x.DrawImage(background, new Point(padding, padding), 1));
 
@@ -384,19 +387,19 @@ namespace BilibiliMonitor.BilibiliAPI
 
         private IImageProcessingContext DrawArticle(DynamicModel.Article item, IImageProcessingContext img, ref PointF point, int startX = 78, int elementWidth = 520)
         {
-            Point initialPoint = (Point) point;
+            Point initialPoint = (Point)point;
             IPath container = new RectangularPolygon(startX, point.Y, elementWidth, 219);
             img.Fill(Color.White, container);
             img.Draw(Pens.Solid(new Rgba32(229, 233, 239), 1), container);
             using var cover = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                 item.covers[0].GetFileNameFromURL()));
-            img.DrawImage(cover, (Point) point, 1);
-            
+            img.DrawImage(cover, (Point)point, 1);
+
             point = new(startX + 16, point.Y + 120 + 5);
 
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 16, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int) point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
+            int padding = (int)point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
             float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 50)
             {
@@ -410,7 +413,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             point = new(padding, point.Y + charHeight + 5);
-            
+
             if (item.desc.Length > 74)
             {
                 item.desc = item.desc.Substring(0, 74) + "..";
@@ -429,7 +432,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap,
                     ref maxCharWidth, maxWidth, ref charHeight);
             }
-            
+
             point = new Point(startX, initialPoint.Y + 219);
             return img;
         }
@@ -440,23 +443,23 @@ namespace BilibiliMonitor.BilibiliAPI
         private IImageProcessingContext DrawVideoElement(DynamicModel.Archive item, IImageProcessingContext img,
             ref PointF point, int startX = 78, int elementWidth = 532)
         {
-            Point initialPoint = (Point) point;
+            Point initialPoint = (Point)point;
             IPath container = new RectangularPolygon(startX, point.Y, elementWidth, 127);
             img.Fill(Color.White, container);
             img.Draw(Pens.Solid(new Rgba32(229, 233, 239), 1), container);
             using var cover = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                 item.cover.GetFileNameFromURL()));
-            img.DrawImage(cover, (Point) point, 1);
+            img.DrawImage(cover, (Point)point, 1);
             container = new RectangularPolygon(startX + 137, point.Y + 8, 58, 18);
             img.Fill(Rgba32.ParseHex(item.badge.bg_color), container);
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Bold);
             img.DrawText(item.badge.text, font, Rgba32.ParseHex(item.badge.color),
-                (Point) new PointF(startX + 137 + 5, point.Y + 8));
+                (Point)new PointF(startX + 137 + 5, point.Y + 8));
             point = new(startX + 203 + 16, point.Y + 9);
 
             font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int) point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
+            int padding = (int)point.X, chargap = 1, maxWidth = elementWidth - 28 + startX;
             float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 42)
             {
@@ -493,7 +496,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(padding, initialPoint.Y + 109);
             using var play = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "play.png"));
             play.Mutate(x => x.Resize(14, 14));
-            img.DrawImage(play, (Point) point, 1);
+            img.DrawImage(play, (Point)point, 1);
             point = new(point.X + 16, initialPoint.Y + 107);
             foreach (var c in item.stat.play)
             {
@@ -504,7 +507,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(point.X + 16, point.Y + 2);
             using var danmaku = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "danmaku.png"));
             danmaku.Mutate(x => x.Resize(14, 14));
-            img.DrawImage(danmaku, (Point) point, 1);
+            img.DrawImage(danmaku, (Point)point, 1);
             point = new(point.X + 16, initialPoint.Y + 107);
             foreach (var c in item.stat.danmaku)
             {
@@ -532,11 +535,11 @@ namespace BilibiliMonitor.BilibiliAPI
             using var like = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "like.png"));
             like.Mutate(x => x.Resize(16, 16));
 
-            img.DrawImage(forward, (Point) point, 1);
+            img.DrawImage(forward, (Point)point, 1);
             point = new(point.X + 16 + 4, point.Y);
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int) point.X, chargap = 1, maxWidth = 610 - 12;
+            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
             float maxCharWidth = 0, charHeight = 0;
             foreach (var c in item.forward.count.ParseNum2Chinese())
             {
@@ -546,7 +549,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             point = new(point.X + 20, point.Y);
 
-            img.DrawImage(comment, (Point) point, 1);
+            img.DrawImage(comment, (Point)point, 1);
             point = new(point.X + 16 + 4, point.Y);
             foreach (var c in item.comment.count.ParseNum2Chinese())
             {
@@ -556,7 +559,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             point = new(point.X + 20, point.Y);
 
-            img.DrawImage(like, (Point) point, 1);
+            img.DrawImage(like, (Point)point, 1);
             point = new(point.X + 16 + 4, point.Y);
             foreach (var c in item.like.count.ParseNum2Chinese())
             {
@@ -580,7 +583,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             using var comment = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "comment.png"));
             comment.Mutate(x => x.Resize(16, 16));
-            img.DrawImage(comment, (Point) point, 1);
+            img.DrawImage(comment, (Point)point, 1);
             point = new(point.X + 14 + 8, point.Y);
 
             string text = "";
@@ -591,7 +594,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             TextOptions options = new(font);
-            int padding = (int) point.X, chargap = 1, maxWidth = 610 - 12;
+            int padding = (int)point.X, chargap = 1, maxWidth = 610 - 12;
             float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
             foreach (var node in item.items[0].desc.rich_text_nodes)
             {
@@ -617,7 +620,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         var emoji = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             node.emoji.icon_url.GetFileNameFromURL()));
                         emoji.Mutate(x => x.Resize(new Size(20, 20)));
-                        img.DrawImage(emoji, (Point) point, 1); // ? point
+                        img.DrawImage(emoji, (Point)point, 1); // ? point
                         break;
                     default:
                         break;
@@ -648,13 +651,13 @@ namespace BilibiliMonitor.BilibiliAPI
             IPath circle = new EllipsePolygon(avatar.Width / 2, avatar.Height / 2, avatar.Width / 2);
             using Image<Rgba32> avatarFrame = new(24, 24, new Rgba32(255, 255, 255, 0));
             avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            main.Mutate(x => x.DrawImage(avatarFrame, (Point) p, 1));
+            main.Mutate(x => x.DrawImage(avatarFrame, (Point)p, 1));
 
             p = new(p.X + 24 + 8, p.Y + 3);
             Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
             main.Mutate(x => x.DrawText(item.modules.module_author.name, font, new Rgba32(0, 161, 214), p));
-            var charSize = TextMeasurer.Measure(item.modules.module_author.name, new TextOptions(font));
-            p = new(p.X + (int) charSize.Width + 8, p.Y);
+            var charSize = TextMeasurer.MeasureSize(item.modules.module_author.name, new TextOptions(font));
+            p = new(p.X + (int)charSize.Width + 8, p.Y);
 
             main.Mutate(x => x.DrawText(item.modules.module_author.pub_action, font, Color.Black, p));
 
@@ -675,7 +678,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             IPath container = new RectangularPolygon(initalPoint.X, initalPoint.Y, 532, p.Y + 20);
             img.Fill(new Rgba32(244, 245, 247), container);
-            img.DrawImage(main, (Point) new PointF(initalPoint.X + 10, initalPoint.Y + 10), 1);
+            img.DrawImage(main, (Point)new PointF(initalPoint.X + 10, initalPoint.Y + 10), 1);
             point = new(initalPoint.X, initalPoint.Y + p.Y + 10);
             return img;
         }
@@ -741,7 +744,7 @@ namespace BilibiliMonitor.BilibiliAPI
             IPath container = new RectangularPolygon(initalPoint.X, initalPoint.Y + 5, 532, totalHeight + 15);
             img.Fill(new Rgba32(244, 245, 247), container);
             point = new(point.X + 10, point.Y + 10);
-            img.DrawImage(textImg, (Point) point, 1);
+            img.DrawImage(textImg, (Point)point, 1);
 
             point = new(initalPoint.X, initalPoint.Y + totalHeight + 10);
             return img;
@@ -755,7 +758,7 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             PointF initalPoint = new(point.X, point.Y);
 
-            int picCount = (int) (item?.items.Length);
+            int picCount = (int)(item?.items.Length);
             if (picCount == 1)
             {
                 var i = item.items[0];
@@ -769,7 +772,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         x.Resize(500, (int)(image.Height * (500 / (float)image.Width)));
                     });
                 }
-                img.DrawImage(image, (Point) point, 1);
+                img.DrawImage(image, (Point)point, 1);
                 point = new(startX, point.Y + image.Height);
             }
             else
@@ -781,7 +784,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         if (item.items[index - 1].src.Contains(".gif")) continue;
                         using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             item.items[index - 1].src.GetFileNameFromURL()));
-                        img.DrawImage(tmp, (Point) point, 1);
+                        img.DrawImage(tmp, (Point)point, 1);
                         if (index % 2 == 0)
                         {
                             point = new(startX, point.Y + 108);
@@ -799,7 +802,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         if (item.items[index - 1].src.Contains(".gif")) continue;
                         using Image tmp = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             item.items[index - 1].src.GetFileNameFromURL()));
-                        img.DrawImage(tmp, (Point) point, 1);
+                        img.DrawImage(tmp, (Point)point, 1);
                         if (index % 3 == 0 && index != picCount)
                         {
                             point = new(startX, point.Y + 108);
@@ -834,7 +837,7 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 using var topic = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "topic.png"));
                 topic.Mutate(x => x.Resize(18, 18));
-                img.DrawImage(topic, (Point) point, 1);
+                img.DrawImage(topic, (Point)point, 1);
                 point = new(point.X + 18, point.Y);
                 font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
                 img.DrawText(item.modules.module_dynamic.topic.name, font, new Rgba32(0, 138, 197), point);
@@ -860,14 +863,14 @@ namespace BilibiliMonitor.BilibiliAPI
                         var emoji = Image.Load(Path.Combine(Path.Combine(UpdateChecker.BasePath, "tmp"),
                             node.emoji.icon_url.GetFileNameFromURL()));
                         emoji.Mutate(x => x.Resize(new Size(20, 20)));
-                        img.DrawImage(emoji, (Point) point, 1);
+                        img.DrawImage(emoji, (Point)point, 1);
                         point = new(point.X + 20, point.Y);
                         break;
                     case "RICH_TEXT_NODE_TYPE_LOTTERY":
                         using (Image gift = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "gift.png")))
                         {
                             gift.Mutate(x => x.Resize(18, 18));
-                            img.DrawImage(gift, (Point) point, 1);
+                            img.DrawImage(gift, (Point)point, 1);
                             point = new(point.X + 22, point.Y);
                         }
 
@@ -884,7 +887,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         using (Image url = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "url.png")))
                         {
                             url.Mutate(x => x.Resize(18, 18));
-                            img.DrawImage(url, (Point) point, 1);
+                            img.DrawImage(url, (Point)point, 1);
                             point = new(point.X + 22, point.Y);
                         }
 
@@ -975,7 +978,7 @@ namespace BilibiliMonitor.BilibiliAPI
             FontRectangle charSize = new();
             try
             {
-                charSize = TextMeasurer.Measure(text, option);
+                charSize = TextMeasurer.MeasureSize(text, option);
             }
             catch
             {
