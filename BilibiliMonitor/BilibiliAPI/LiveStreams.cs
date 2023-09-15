@@ -1,101 +1,67 @@
 ﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
-using System.Diagnostics;
-using System.IO;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Path = System.IO.Path;
 using System;
-using static System.Net.Mime.MediaTypeNames;
+using System.Diagnostics;
+using System.IO;
 using Image = SixLabors.ImageSharp.Image;
+using Path = System.IO.Path;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
     public class LiveStreams
     {
-        private static string BaseUIDQueryURL = "https://api.live.bilibili.com/live_user/v1/Master/info?uid=";
-        private static string BaseRoomInfoURL = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
         private static string BasePicURL = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
-        public long UID { get; set; }
-        public int RoomID { get; set; }
-        public string Name { get; set; }
-        public bool Streaming { get => StreamingStatus == 1; }
-        private int StreamingStatus { get; set; }
-        public LiveStreamsModel.RoomInfo RoomInfo { get; set; }
-        public LiveStreamsModel.UserInfo UserInfo { get; set; }
-        public bool ReFetchFlag { get; set; }
+
+        private static string BaseRoomInfoURL = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
+
+        private static string BaseUIDQueryURL = "https://api.live.bilibili.com/live_user/v1/Master/info?uid=";
 
         public LiveStreams(long uid)
         {
             UID = uid;
             FetchUserInfo();
         }
-        public void FetchUserInfo()
+
+        public string Name { get; set; }
+
+        public bool ReFetchFlag { get; set; }
+
+        public int RoomID { get; set; }
+
+        public LiveStreamsModel.RoomInfo RoomInfo { get; set; }
+
+        public bool Streaming { get => StreamingStatus == 1; }
+
+        public long UID { get; set; }
+
+        public LiveStreamsModel.UserInfo UserInfo { get; set; }
+
+        private int StreamingStatus { get; set; }
+
+        public void DownloadPics()
         {
-            string text = Helper.Get(BaseUIDQueryURL + UID).Result;
-            //string text = File.ReadAllText(@"E:\DO\live.txt");
-            var json = JsonConvert.DeserializeObject<LiveStreamsModel.UserInfo_Main>(text);
-            if (json != null && json.code == 0)
+            if (RoomInfo == null || UserInfo == null)
             {
-                Name = json.data.info.uname;
-                RoomID = json.data.room_id;
-                UserInfo = json.data;
+                return;
             }
-        }
-        public bool FetchRoomInfo()
-        {
-            if (ReFetchFlag) { ReFetchFlag = false; return true; }
-            string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
-            if (string.IsNullOrEmpty(text)) return false;
-            LiveStreamsModel.RoomInfo_Main json = null;
-            try
-            {
-                json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
-                if (json == null)
-                {
-                    throw new Exception("json err");
-                }
-            }
-            catch
-            {
-                if (UpdateChecker.Instance.DebugMode)
-                {
-                    LogHelper.Info("拉取直播状态", $"Name={Name}, json={text}");
-                }
-                return false;
-            }
-            if (json.code == 0)
-            {
-                RoomInfo = json.data;
-                if (json.data.live_status == 1 && json.data.live_time.StartsWith("0000")) return false;
-                if (json.data.live_status != StreamingStatus)
-                {
-                    StreamingStatus = json.data.live_status;
-                    if (Streaming)
-                    {
-                        LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
-                        return true;
-                    }
-                }
-                if (UpdateChecker.Instance.DebugMode)
-                {
-                    LogHelper.Info("直播检查", $"{Name}直播状态更新成功");
-                }
-            }
-            else
-            {
-                Debug.WriteLine(json.message);
-            }
-            return false;
+
+            _ = Helper.DownloadFile(RoomInfo.user_cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            _ = Helper.DownloadFile(UserInfo.info.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
         }
 
         public string DrawLiveStreamPic()
         {
-            if (RoomInfo == null || UserInfo == null) return string.Empty;
+            if (RoomInfo == null || UserInfo == null)
+            {
+                return string.Empty;
+            }
+
             using Image<Rgba32> main = new(652, 198, Color.White);
             string avatarPath = Path.Combine(UpdateChecker.BasePath, "tmp", UserInfo.info.face.GetFileNameFromURL());
             string coverPath = Path.Combine(UpdateChecker.BasePath, "tmp", RoomInfo.user_cover.GetFileNameFromURL());
@@ -126,7 +92,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            RichTextOptions option = new RichTextOptions(smallFont);
+            RichTextOptions option = new(smallFont);
             PointF point = new(48 + 5, 15);
             var size = TextMeasurer.MeasureSize(Name, option);
             Info.Mutate(x => x.DrawText(Name, smallFont, Color.Black, point));
@@ -160,11 +126,72 @@ namespace BilibiliMonitor.BilibiliAPI
             return Path.Combine("BiliBiliMonitor", "LiveStream", filename);
         }
 
-        public void DownloadPics()
+        public bool FetchRoomInfo()
         {
-            if (RoomInfo == null || UserInfo == null) return;
-            _ = Helper.DownloadFile(RoomInfo.user_cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-            _ = Helper.DownloadFile(UserInfo.info.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            if (ReFetchFlag) { ReFetchFlag = false; return true; }
+            string text = Helper.Get(BaseRoomInfoURL + RoomID).Result;
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            LiveStreamsModel.RoomInfo_Main json = null;
+            try
+            {
+                json = JsonConvert.DeserializeObject<LiveStreamsModel.RoomInfo_Main>(text);
+                if (json == null)
+                {
+                    throw new Exception("json err");
+                }
+            }
+            catch
+            {
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("拉取直播状态", $"Name={Name}, json={text}");
+                }
+                return false;
+            }
+            if (json.code == 0)
+            {
+                RoomInfo = json.data;
+                if (json.data.live_status == 1 && json.data.live_time.StartsWith("0000"))
+                {
+                    return false;
+                }
+
+                if (json.data.live_status != StreamingStatus)
+                {
+                    StreamingStatus = json.data.live_status;
+                    if (Streaming)
+                    {
+                        LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
+                        return true;
+                    }
+                }
+                if (UpdateChecker.Instance.DebugMode)
+                {
+                    LogHelper.Info("直播检查", $"{Name}直播状态更新成功");
+                }
+            }
+            else
+            {
+                Debug.WriteLine(json.message);
+            }
+            return false;
+        }
+
+        public void FetchUserInfo()
+        {
+            string text = Helper.Get(BaseUIDQueryURL + UID).Result;
+            //string text = File.ReadAllText(@"E:\DO\live.txt");
+            var json = JsonConvert.DeserializeObject<LiveStreamsModel.UserInfo_Main>(text);
+            if (json != null && json.code == 0)
+            {
+                Name = json.data.info.uname;
+                RoomID = json.data.room_id;
+                UserInfo = json.data;
+            }
         }
     }
 }

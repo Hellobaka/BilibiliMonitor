@@ -13,6 +13,7 @@ namespace BilibiliMonitor
         /// 配置文件路径
         /// </summary>
         public static string ConfigFileName = @"Config.json";
+
         /// <summary>
         /// 读取配置
         /// </summary>
@@ -22,24 +23,32 @@ namespace BilibiliMonitor
         public static T GetConfig<T>(string sectionName)
         {
             if (File.Exists(ConfigFileName) is false)
+            {
                 File.WriteAllText(ConfigFileName, "{}");
+            }
+
             var o = JObject.Parse(File.ReadAllText(ConfigFileName));
             if (o.ContainsKey(sectionName))
+            {
                 return o[sectionName]!.ToObject<T>();
-            if (typeof(T) == typeof(string))
-                return (T)(object)"";
-            if (typeof(T) == typeof(int))
-                return (T)(object)0;
-            if (typeof(T) == typeof(bool))
-                return (T)(object)false;
-            if (typeof(T) == typeof(object))
-                return (T)(object)new { };
-            throw new Exception("无法默认返回");
+            }
+
+            return typeof(T) == typeof(string)
+                ? (T)(object)""
+                : typeof(T) == typeof(int)
+                ? (T)(object)0
+                : typeof(T) == typeof(bool)
+                ? (T)(object)false
+                : typeof(T) == typeof(object) ? (T)(object)new { } : throw new Exception("无法默认返回");
         }
+
         public static void WriteConfig<T>(string sectionName, T value)
         {
             if (File.Exists(ConfigFileName) is false)
+            {
                 File.WriteAllText(ConfigFileName, "{}");
+            }
+
             var o = JObject.Parse(File.ReadAllText(ConfigFileName));
             if (o.ContainsKey(sectionName))
             {
@@ -52,5 +61,4 @@ namespace BilibiliMonitor
             File.WriteAllText(ConfigFileName, o.ToString(Newtonsoft.Json.Formatting.Indented));
         }
     }
-
 }

@@ -1,36 +1,51 @@
 ﻿using BilibiliMonitor.BilibiliAPI;
-using Newtonsoft.Json.Linq;
+using BilibiliMonitor.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
-using BilibiliMonitor.Models;
 using System.Text;
+using System.Threading;
 
 namespace BilibiliMonitor
 {
     public class UpdateChecker
     {
         public static string BasePath { get; set; } = "";
+
         public static string PicPath { get; set; } = "";
+
         public int DynamicCheckCD { get; set; } = 5;
+
         public static UpdateChecker Instance { get; private set; }
+
         public bool Enabled { get; set; } = false;
+
         public List<Dynamics> Dynamics { get; set; } = new();
+
         public List<LiveStreams> LiveStreams { get; set; } = new();
+
         public List<Bangumi> Bangumis { get; set; } = new();
+
         public string Cookies { get; set; } = "";
+
         public bool DebugMode { get; set; } = false;
 
         public delegate void DynamicUpdateHandler(DynamicModel.Item item, long id, string picPath);
+
         public event DynamicUpdateHandler OnDynamic;
+
         public delegate void StreamOpenHandler(LiveStreamsModel.RoomInfo roomInfo, LiveStreamsModel.UserInfo userInfo, string picPath);
+
         public event StreamOpenHandler OnStream;
+
         public delegate void BangumiUpdateHandler(BangumiModel.DetailInfo bangumiInfo, BangumiModel.Episode epInfo, string picPath);
+
         public event BangumiUpdateHandler OnBangumi;
+
         public delegate void BangumiEndHandler(Bangumi bangumi);
+
         public event BangumiEndHandler OnBangumiEnd;
+
         public UpdateChecker(string basePath, string picPath)
         {
             EncodingProvider provider = CodePagesEncodingProvider.Instance;
@@ -55,7 +70,7 @@ namespace BilibiliMonitor
                                 {
                                     // TODO: 移动至独立方法
                                     // 动态列表缓存
-                                    for (int i = 0; i < dy.Used.Count; i++) 
+                                    for (int i = 0; i < dy.Used.Count; i++)
                                     {
                                         var item = dy.Used[i];
                                         if (item.Item2.AddDays(1) < DateTime.Now)
@@ -128,7 +143,7 @@ namespace BilibiliMonitor
                                 }
                                 finally
                                 {
-                                    if(pic != null)
+                                    if (pic != null)
                                     {
                                         OnStream?.Invoke(live.RoomInfo, live.UserInfo, pic);
                                         LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
@@ -173,7 +188,7 @@ namespace BilibiliMonitor
                                 }
                                 finally
                                 {
-                                    if(pic != null)
+                                    if (pic != null)
                                     {
                                         OnBangumi?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
                                         LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
@@ -197,9 +212,13 @@ namespace BilibiliMonitor
                 }
             }).Start();
         }
-        int bangumiErrCount = 0;
-        int dynamicErrCount = 0;
-        int livestreamErrCount = 0;
+
+        private int bangumiErrCount = 0;
+
+        private int dynamicErrCount = 0;
+
+        private int livestreamErrCount = 0;
+
         public Dynamics AddDynamic(long uid)
         {
             if (Dynamics.Any(x => x.UID == uid))
@@ -221,6 +240,7 @@ namespace BilibiliMonitor
 
             Dynamics.Remove(Dynamics.First(x => x.UID == uid));
         }
+
         public LiveStreams AddStream(long uid)
         {
             if (LiveStreams.Any(x => x.UID == uid))
@@ -245,18 +265,31 @@ namespace BilibiliMonitor
 
         public Bangumi AddBangumi(int seasonId)
         {
-            if (Bangumis.Any(x => x.SeasonID == seasonId)) return Bangumis.First(x => x.SeasonID == seasonId);
+            if (Bangumis.Any(x => x.SeasonID == seasonId))
+            {
+                return Bangumis.First(x => x.SeasonID == seasonId);
+            }
+
             Bangumi ban = new(seasonId);
-            if (string.IsNullOrWhiteSpace(ban.Name)) return null;
+            if (string.IsNullOrWhiteSpace(ban.Name))
+            {
+                return null;
+            }
+
             Bangumis.Add(ban);
             return ban;
         }
 
         public void RemoveBangumi(int seasonId)
         {
-            if (Bangumis.Any(x => x.SeasonID == seasonId) is false) return;
+            if (Bangumis.Any(x => x.SeasonID == seasonId) is false)
+            {
+                return;
+            }
+
             Bangumis.Remove(Bangumis.First(x => x.SeasonID == seasonId));
         }
+
         public List<(long, string, bool)> GetStreamList()
         {
             List<(long, string, bool)> ls = new();
@@ -266,6 +299,7 @@ namespace BilibiliMonitor
             }
             return ls;
         }
+
         public List<(long, string)> GetDynamicList()
         {
             List<(long, string)> ls = new();
@@ -275,6 +309,7 @@ namespace BilibiliMonitor
             }
             return ls;
         }
+
         public List<(int, string)> GetBangumiList()
         {
             List<(int, string)> ls = new();
@@ -284,12 +319,15 @@ namespace BilibiliMonitor
             }
             return ls;
         }
+
         public Dynamics GetDynamic(long uid)
         {
             foreach (var item in Dynamics)
             {
                 if (item.UID == uid)
+                {
                     return item;
+                }
             }
             return null;
         }
@@ -298,6 +336,7 @@ namespace BilibiliMonitor
         {
             Enabled = true;
         }
+
         public void Stop()
         {
             Enabled = false;

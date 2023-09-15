@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using BilibiliMonitor.Models;
+﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -8,143 +6,47 @@ using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Path = System.IO.Path;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Net.Http;
-using static BilibiliMonitor.Models.LiveStreamsModel;
+using System.Text.RegularExpressions;
+using Path = System.IO.Path;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
     public class Videos
     {
-        private static string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
         private static string BaseUserInfoURL = "http://api.bilibili.com/x/web-interface/card?mid={0}";
+
         private static string BaseVideoTagURL = "https://api.bilibili.com/x/tag/archive/tags?bvid={0}";
 
+        private static string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
+
         private static Dictionary<string, string> shortURLCache { get; set; } = new();
-        public static string ParseURLFromXML(string xml)
-        {
-            var match = Regex.Match(xml, "(b23\\.tv.*?)\"");
-            if (match.Success)
-            {
-                string res = ParseURL(match.Groups[1].Value);
-                if (string.IsNullOrEmpty(res)) return string.Empty;
-                if(!shortURLCache.ContainsKey(match.Groups[1].Value))
-                    shortURLCache.Add(match.Groups[1].Value, res);
-                return res;
-            }
-            return string.Empty;
-        }
-        public static string ParseURL(string url)
-        {
-            if (url.StartsWith("bv") || url.StartsWith("BV") || url.StartsWith("av") || url.StartsWith("AV"))
-                return url;
-            if (string.IsNullOrEmpty(url)) return string.Empty;
-            url = url.Trim();
-            //LogHelper.Info("视频解析", url);
-            if (url.Contains("b23.tv"))
-            {
-                url = url.Replace("\\", "");
-                var match = Regex.Match(url, "https://b23\\.tv/.*");
-                if (match.Success)
-                    url = match.Groups[match.Groups.Count - 1].Value;
-                url = url.Split('?').First();
-                if (shortURLCache.ContainsKey(url)) return shortURLCache[url];
-                if(url.StartsWith("http") is false)
-                {
-                    url = "https://" + url;
-                }
-                using var http = new HttpClient();
-                var r = http.GetAsync(url);
-                r.Wait();
-                string bvid = r.Result.RequestMessage.RequestUri.AbsoluteUri;
-                if(!shortURLCache.ContainsKey(url))
-                    shortURLCache.Add(url, bvid);
-                url = bvid;
-            }
-            //LogHelper.Info("视频解析", url);
-            if (url.Contains("bilibili.com/video"))
-            {
-                string vid = url.Split('/').First(x => x.ToLower().StartsWith("av") || x.StartsWith("BV"));
-                if(vid.StartsWith("av"))
-                {
-                    vid = vid.Substring(2);
-                }
-                vid = vid.Split('?').First();
-                return vid;
-            }
-            else
-            {
-                //LogHelper.Info("视频解析", "网址格式无法解析", false);
-                return string.Empty;
-            }
-        }
-        private static VideoModel.Data GetVideoInfo(string bvId)
-        {
-            string url = string.Format(BaseVideoURL, "bvid=" + bvId);
-            if (int.TryParse(bvId, out int aid))
-            {
-                url = string.Format(BaseVideoURL, "aid=" + aid);
-            }
-            var json = JsonConvert.DeserializeObject<VideoModel.Main>(Helper.Get(url).Result);
-            // var json = JsonConvert.DeserializeObject<VideoModel.Main>(File.ReadAllText(@"E:\DO\video.json"));
-            if (json.code == 0)
-            {
-                return json.data;
-            }
-            else
-            {
-                Debug.WriteLine(json.message);
-            }
-            return null;
-        }
-        private static UserInfoModel.Data GetUserInfo(long mid)
-        {
-            string url = string.Format(BaseUserInfoURL, mid);
-            var json = JsonConvert.DeserializeObject<UserInfoModel.Main>(Helper.Get(url).Result);
-            // var json = JsonConvert.DeserializeObject<UserInfoModel.Main>(File.ReadAllText(@"E:\DO\e.json"));
-            if (json.code == 0)
-            {
-                return json.data;
-            }
-            else
-            {
-                Debug.WriteLine(json.message);
-            }
-            return null;
-        }
-        private static VideoTagModel.Datum[] GetVideoTag(string bvid)
-        {
-            string url = string.Format(BaseVideoTagURL, bvid);
-            var json = JsonConvert.DeserializeObject<VideoTagModel.Main>(Helper.Get(url).Result);
-            // var json = JsonConvert.DeserializeObject<VideoTagModel.Main>(File.ReadAllText(@"E:\DO\tag.json"));
-            if (json.code == 0)
-            {
-                return json.data;
-            }
-            else
-            {
-                Debug.WriteLine(json.message);
-            }
-            return null;
-        }
-        private static void DownloadPics(VideoModel.Data data)
-        {
-            if (data == null) return;
-            _ = Helper.DownloadFile(data.pic, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-            _ = Helper.DownloadFile(data.owner.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-        }
+
         public static string DrawVideoPic(string id)
         {
             var video = GetVideoInfo(id);
-            if (video == null) return string.Empty;
+            if (video == null)
+            {
+                return string.Empty;
+            }
+
             var tag = GetVideoTag(video.bvid);
-            if (tag == null) return string.Empty;
+            if (tag == null)
+            {
+                return string.Empty;
+            }
+
             var user = GetUserInfo(video.owner.mid);
-            if (user == null) return string.Empty;
+            if (user == null)
+            {
+                return string.Empty;
+            }
+
             DownloadPics(video);
             using Image<Rgba32> main = new(652, 1980, Color.White);
             using Image cover =
@@ -166,7 +68,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
             Font midFont = SystemFonts.CreateFont("Microsoft YaHei", 18);
             Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            TextOptions option = new TextOptions(smallFont);
+            TextOptions option = new(smallFont);
             point = new(10 + 48 + 5, height + 12);
             var size = TextMeasurer.MeasureSize(video.owner.name, option);
             Color nameColor = string.IsNullOrEmpty(user.card.vip.nickname_color) ? Color.Black : Rgba32.ParseHex(user.card.vip.nickname_color);
@@ -230,8 +132,8 @@ namespace BilibiliMonitor.BilibiliAPI
             main.Mutate(x => x.DrawText($"AV{video.aid}", smallFont, gray, point));
 
             point = new(10, point.Y + 30);
-            padding = (int)point.X; 
-            chargap = 1; 
+            padding = (int)point.X;
+            chargap = 1;
             maxWidth = 632;
             maxCharWidth = 0;
             charHeight = 0;
@@ -263,22 +165,22 @@ namespace BilibiliMonitor.BilibiliAPI
             main.Mutate(x => x.DrawImage(like, (Point)imgPoint, 1));
             string text = Helper.ParseLongNumber(video.stat.like);
             size = TextMeasurer.MeasureSize(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - size.Width / 2, point.Y + 78)));
+            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(coin, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.coin);
             size = TextMeasurer.MeasureSize(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - size.Width / 2, point.Y + 78)));
+            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(favorite, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.favorite);
             size = TextMeasurer.MeasureSize(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - size.Width / 2, point.Y + 78)));
+            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
             imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
             main.Mutate(x => x.DrawImage(forward, (Point)imgPoint, 1));
             text = Helper.ParseLongNumber(video.stat.reply);
             size = TextMeasurer.MeasureSize(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - size.Width / 2, point.Y + 78)));
+            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
 
             point = new(10, imgPoint.Y + 48 + 20 + 20);
             main.Mutate(x => x.Crop(652, (int)point.Y));
@@ -291,6 +193,101 @@ namespace BilibiliMonitor.BilibiliAPI
 
             return Path.Combine("BiliBiliMonitor", "Video", filename);
         }
+
+        public static string ParseURL(string url)
+        {
+            if (url.StartsWith("bv") || url.StartsWith("BV") || url.StartsWith("av") || url.StartsWith("AV"))
+            {
+                return url;
+            }
+
+            if (string.IsNullOrEmpty(url))
+            {
+                return string.Empty;
+            }
+
+            url = url.Trim();
+            //LogHelper.Info("视频解析", url);
+            if (url.Contains("b23.tv"))
+            {
+                url = url.Replace("\\", "");
+                var match = Regex.Match(url, "https://b23\\.tv/.*");
+                if (match.Success)
+                {
+                    url = match.Groups[match.Groups.Count - 1].Value;
+                }
+
+                url = url.Split('?').First();
+                if (shortURLCache.ContainsKey(url))
+                {
+                    return shortURLCache[url];
+                }
+
+                if (url.StartsWith("http") is false)
+                {
+                    url = "https://" + url;
+                }
+                using var http = new HttpClient();
+                var r = http.GetAsync(url);
+                r.Wait();
+                string bvid = r.Result.RequestMessage.RequestUri.AbsoluteUri;
+                if (!shortURLCache.ContainsKey(url))
+                {
+                    shortURLCache.Add(url, bvid);
+                }
+
+                url = bvid;
+            }
+            //LogHelper.Info("视频解析", url);
+            if (url.Contains("bilibili.com/video"))
+            {
+                string vid = url.Split('/').First(x => x.ToLower().StartsWith("av") || x.StartsWith("BV"));
+                if (vid.StartsWith("av"))
+                {
+                    vid = vid.Substring(2);
+                }
+                vid = vid.Split('?').First();
+                return vid;
+            }
+            else
+            {
+                //LogHelper.Info("视频解析", "网址格式无法解析", false);
+                return string.Empty;
+            }
+        }
+
+        public static string ParseURLFromXML(string xml)
+        {
+            var match = Regex.Match(xml, "(b23\\.tv.*?)\"");
+            if (match.Success)
+            {
+                string res = ParseURL(match.Groups[1].Value);
+                if (string.IsNullOrEmpty(res))
+                {
+                    return string.Empty;
+                }
+
+                if (!shortURLCache.ContainsKey(match.Groups[1].Value))
+                {
+                    shortURLCache.Add(match.Groups[1].Value, res);
+                }
+
+                return res;
+            }
+            return string.Empty;
+        }
+
+        private static void DownloadPics(VideoModel.Data data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            _ = Helper.DownloadFile(data.pic, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            _ = Helper.DownloadFile(data.owner.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+        }
+
         /// <summary>
         /// 分字符绘制，处理emoji
         /// </summary>
@@ -299,13 +296,18 @@ namespace BilibiliMonitor.BilibiliAPI
         {
             return DrawString(img, c.ToString(), color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
         }
+
         /// <summary>
         /// 文本绘制
         /// </summary>
         /// <returns>总字符高度</returns>
         private static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
         {
-            if (string.IsNullOrEmpty(text)) return totalHeight;
+            if (string.IsNullOrEmpty(text))
+            {
+                return totalHeight;
+            }
+
             FontRectangle charSize = new();
             try
             {
@@ -316,7 +318,11 @@ namespace BilibiliMonitor.BilibiliAPI
                 return totalHeight;
             }
             charHeight = Math.Max(charSize.Height, charHeight);
-            if (totalHeight == 0) totalHeight = charHeight;
+            if (totalHeight == 0)
+            {
+                totalHeight = charHeight;
+            }
+
             if (text == "\n")
             {
                 point.X = padding;
@@ -330,6 +336,59 @@ namespace BilibiliMonitor.BilibiliAPI
             totalHeight = WrapTest(maxWidth, padding, charGap, charSize, ref point, totalHeight);
             return totalHeight;
         }
+
+        private static UserInfoModel.Data GetUserInfo(long mid)
+        {
+            string url = string.Format(BaseUserInfoURL, mid);
+            var json = JsonConvert.DeserializeObject<UserInfoModel.Main>(Helper.Get(url).Result);
+            // var json = JsonConvert.DeserializeObject<UserInfoModel.Main>(File.ReadAllText(@"E:\DO\e.json"));
+            if (json.code == 0)
+            {
+                return json.data;
+            }
+            else
+            {
+                Debug.WriteLine(json.message);
+            }
+            return null;
+        }
+
+        private static VideoModel.Data GetVideoInfo(string bvId)
+        {
+            string url = string.Format(BaseVideoURL, "bvid=" + bvId);
+            if (int.TryParse(bvId, out int aid))
+            {
+                url = string.Format(BaseVideoURL, "aid=" + aid);
+            }
+            var json = JsonConvert.DeserializeObject<VideoModel.Main>(Helper.Get(url).Result);
+            // var json = JsonConvert.DeserializeObject<VideoModel.Main>(File.ReadAllText(@"E:\DO\video.json"));
+            if (json.code == 0)
+            {
+                return json.data;
+            }
+            else
+            {
+                Debug.WriteLine(json.message);
+            }
+            return null;
+        }
+
+        private static VideoTagModel.Datum[] GetVideoTag(string bvid)
+        {
+            string url = string.Format(BaseVideoTagURL, bvid);
+            var json = JsonConvert.DeserializeObject<VideoTagModel.Main>(Helper.Get(url).Result);
+            // var json = JsonConvert.DeserializeObject<VideoTagModel.Main>(File.ReadAllText(@"E:\DO\tag.json"));
+            if (json.code == 0)
+            {
+                return json.data;
+            }
+            else
+            {
+                Debug.WriteLine(json.message);
+            }
+            return null;
+        }
+
         /// <summary>
         /// 换行
         /// </summary>
