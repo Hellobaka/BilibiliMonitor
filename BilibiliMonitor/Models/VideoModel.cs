@@ -4,7 +4,7 @@
     {
         public class Main
         {
-            public int code { get; set; }
+            public long code { get; set; }
 
             public string message { get; set; }
 
@@ -15,13 +15,13 @@
         {
             public string bvid { get; set; }
 
-            public int aid { get; set; }
+            public long aid { get; set; }
 
             public string pic { get; set; }
 
             public string title { get; set; }
 
-            public int pubdate { get; set; }
+            public long pubdate { get; set; }
 
             public string desc { get; set; }
 
@@ -41,27 +41,27 @@
 
         public class Stat
         {
-            public int aid { get; set; }
+            public long aid { get; set; }
 
-            public int view { get; set; }
+            public long view { get; set; }
 
-            public int danmaku { get; set; }
+            public long danmaku { get; set; }
 
-            public int reply { get; set; }
+            public long reply { get; set; }
 
-            public int favorite { get; set; }
+            public long favorite { get; set; }
 
-            public int coin { get; set; }
+            public long coin { get; set; }
 
-            public int share { get; set; }
+            public long share { get; set; }
 
-            public int now_rank { get; set; }
+            public long now_rank { get; set; }
 
-            public int his_rank { get; set; }
+            public long his_rank { get; set; }
 
-            public int like { get; set; }
+            public long like { get; set; }
 
-            public int dislike { get; set; }
+            public long dislike { get; set; }
 
             public string evaluation { get; set; }
 

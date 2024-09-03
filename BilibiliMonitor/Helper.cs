@@ -123,7 +123,7 @@ namespace BilibiliMonitor
             return c is >= (char)0xD800 and <= (char)0xDBFF;
         }
 
-        public static string ParseLongNumber(int num)
+        public static string ParseLongNumber(long num)
         {
             string numStr = num.ToString();
             int step = 1;
