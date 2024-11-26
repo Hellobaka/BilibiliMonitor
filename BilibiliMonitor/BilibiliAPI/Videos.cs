@@ -211,22 +211,24 @@ namespace BilibiliMonitor.BilibiliAPI
             if (url.Contains("b23.tv"))
             {
                 url = url.Replace("\\", "");
-                var match = Regex.Match(url, "https://b23\\.tv/.*");
+                var match = Regex.Match(url, "b23\\.tv/.*");
                 if (match.Success)
                 {
                     url = match.Groups[match.Groups.Count - 1].Value;
                 }
-
+                url = url.Replace(" ", "").Replace("\r", "").Replace("\n", "");
                 url = url.Split('?').First();
-                if (shortURLCache.ContainsKey(url))
-                {
-                    return shortURLCache[url];
-                }
 
                 if (url.StartsWith("http") is false)
                 {
                     url = "https://" + url;
                 }
+
+                if (shortURLCache.ContainsKey(url))
+                {
+                    return shortURLCache[url];
+                }
+
                 using var http = new HttpClient();
                 var r = http.GetAsync(url);
                 r.Wait();

@@ -14,7 +14,8 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void ParseURLTest()
         {
-            string url = @"https://www.bilibili.com/video/BV1Sy411H7L3/";
+            string url = @"[CQ:image,file=114514]b23.tv/BV1uZ421T7W8
+这个游戏 应该什么掌机都能玩";
             string id = Videos.ParseURL(url);
             Console.WriteLine(id);
             Assert.IsTrue(!string.IsNullOrEmpty(id));
