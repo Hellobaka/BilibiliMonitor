@@ -43,6 +43,7 @@ namespace BilibiliMonitor
                 if (!UpdateCookie(false))
                 {
                     LogHelper.Info("GetCurrentCookie", "更新Cookie失败，查看日志排查问题", false);
+                    LastGetCookieTime = DateTime.Now;
                     return null;
                 }
             }
