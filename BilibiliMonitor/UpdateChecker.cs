@@ -26,8 +26,6 @@ namespace BilibiliMonitor
 
         public List<Bangumi> Bangumis { get; set; } = new();
 
-        public string Cookies { get; set; } = "";
-
         public bool DebugMode { get; set; } = false;
 
         public delegate void DynamicUpdateHandler(DynamicModel.Item item, long id, string picPath);

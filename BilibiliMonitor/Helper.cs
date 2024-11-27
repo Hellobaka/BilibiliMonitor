@@ -90,11 +90,16 @@ namespace BilibiliMonitor
                 };
                 if (!string.IsNullOrEmpty(cookie))
                 {
+                    cookie = cookie.Replace(" ", "");
                     foreach (var item in cookie.Split(';'))
                     {
-                        if (string.IsNullOrEmpty(item) is false)
+                        if (string.IsNullOrEmpty(item) is false || !item.Contains("="))
                         {
                             string[] c = item.Split('=');
+                            if (string.IsNullOrEmpty(c.First()))
+                            {
+                                continue;
+                            }
                             handler.CookieContainer.Add(new Uri("https://api.bilibili.com/"), new Cookie(c.First(), c.Last()));
                         }
                     }

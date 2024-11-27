@@ -19,6 +19,11 @@ namespace BilibiliMonitor
     // https://socialsisteryi.github.io/bilibili-API-collect/docs/login/cookie_refresh.html
     public static class CookieManager
     {
+        static CookieManager()
+        {
+            SetCookie(Config.GetConfig<string>("Cookies"), Config.GetConfig<string>("RefreshToken"));
+        }
+
         private const string PublicKey = "-----BEGIN PUBLIC KEY----- MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLgd2OAkcGVtoE3ThUREbio0Eg Uc/prcajMKXvkCKFCWhJYJcLkcM2DKKcSeFpD/j6Boy538YXnR6VhcuUJOhH2x71 nzPjfdTcqMz7djHum0qSZA0AyCBDABUqCrfNgCiJ00Ra7GmRj+YCK1NJEuewlb40 JNrRuoEUXpabUzGB8QIDAQAB -----END PUBLIC KEY-----";
 
         private static Dictionary<string, string> CurrentCookieDict { get; set; } = [];
@@ -29,8 +34,19 @@ namespace BilibiliMonitor
 
         private static string[] CookieFilter { get; set; } = ["Path", "Domain", "Expires", "HttpOnly", "Secure"];
 
-        public static string GetCurrentCookie()
+        private static DateTime LastGetCookieTime { get; set; } = new();
+
+        public static string? GetCurrentCookie()
         {
+            if (LastGetCookieTime.Date != DateTime.Now.Date)
+            {
+                if (!UpdateCookie(false))
+                {
+                    LogHelper.Info("GetCurrentCookie", "更新Cookie失败，查看日志排查问题", false);
+                    return null;
+                }
+            }
+            LastGetCookieTime = DateTime.Now;
             return BuildCookieFromDict(CurrentCookieDict);
         }
 
@@ -42,7 +58,7 @@ namespace BilibiliMonitor
             }
             CurrentRefreshToken = refreshToken;
             CurrentCookieDict = [];
-            foreach (var item in cookie.Split(';'))
+            foreach (var item in cookie.Split([';'], StringSplitOptions.RemoveEmptyEntries))
             {
                 var c = item.Split('=');
                 CurrentCookieDict.Add(c.First().Trim(), c.Last().Trim());
@@ -104,7 +120,7 @@ namespace BilibiliMonitor
             using WebClient webClient = new();
             try
             {
-                webClient.Headers.Add("Cookie", GetCurrentCookie());
+                webClient.Headers.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
                 string response = webClient.DownloadString($"{url}?csrf={CurrentRefresh_csrf}");
                 var json = JObject.Parse(response);
                 Console.WriteLine(json);
@@ -159,7 +175,7 @@ namespace BilibiliMonitor
             using HttpClient httpClient = new();
             try
             {
-                httpClient.DefaultRequestHeaders.Add("Cookie", GetCurrentCookie());
+                httpClient.DefaultRequestHeaders.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
                 httpClient.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0");
                 httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip");
                 var getTask = httpClient.GetAsync(url);
@@ -193,8 +209,8 @@ namespace BilibiliMonitor
         {
             LogHelper.Info("RefreshCookie", $"token={token}");
             string url = "https://passport.bilibili.com/x/passport-login/web/cookie/refresh";
-            using WebClient webClient = new WebClient();
-            webClient.Headers.Add("Cookie", GetCurrentCookie());
+            using WebClient webClient = new();
+            webClient.Headers.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
             webClient.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
             NameValueCollection postData = new()
             {
@@ -234,7 +250,7 @@ namespace BilibiliMonitor
                             else if (CurrentCookieDict.ContainsKey(key))
                             {
                                 CurrentCookieDict[key] = value;
-                                LogHelper.Info("RefreshCookie", $"UpdateCookie, {key}={value}", false);
+                                LogHelper.Info("RefreshCookie", $"UpdateCookie, {key}={value}");
                             }
                         }
                     }

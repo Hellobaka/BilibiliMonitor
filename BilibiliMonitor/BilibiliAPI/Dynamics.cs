@@ -366,7 +366,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             string url = string.Format(BaseUrl, UID);
-            string text = Helper.Get(url, UpdateChecker.Instance.Cookies).Result;
+            string text = Helper.Get(url, CookieManager.GetCurrentCookie()).Result;
             //string text = File.ReadAllText(@"E:\DO\dy.txt");
             DynamicModel.Main json = null;
             try
