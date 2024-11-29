@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace BilibiliMonitor
 {
+    // TODO: 弃置此类，改为各个模型类中更新事件
     public class UpdateChecker
     {
         public static string BasePath { get; set; } = "";
