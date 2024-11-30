@@ -150,7 +150,7 @@ namespace BilibiliMonitor
                                 }
                             }
 
-                            List<int> removeBangumiList = new();
+                            List<long> removeBangumiList = new();
                             foreach (var bangumi in Bangumis)// 番剧检查
                             {
                                 string pic = null;
@@ -262,7 +262,7 @@ namespace BilibiliMonitor
             LiveStreams.Remove(LiveStreams.First(x => x.UID == uid));
         }
 
-        public Bangumi AddBangumi(int seasonId)
+        public Bangumi AddBangumi(long seasonId)
         {
             if (Bangumis.Any(x => x.SeasonID == seasonId))
             {
@@ -279,7 +279,7 @@ namespace BilibiliMonitor
             return ban;
         }
 
-        public void RemoveBangumi(int seasonId)
+        public void RemoveBangumi(long seasonId)
         {
             if (Bangumis.Any(x => x.SeasonID == seasonId) is false)
             {
@@ -309,9 +309,9 @@ namespace BilibiliMonitor
             return ls;
         }
 
-        public List<(int, string)> GetBangumiList()
+        public List<(long, string)> GetBangumiList()
         {
-            List<(int, string)> ls = new();
+            List<(long, string)> ls = new();
             foreach (var item in Bangumis)
             {
                 ls.Add((item.SeasonID, item.Name));

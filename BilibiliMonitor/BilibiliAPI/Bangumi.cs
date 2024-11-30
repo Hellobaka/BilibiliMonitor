@@ -22,7 +22,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
         private bool init = true;
 
-        public Bangumi(int seasonId)
+        public Bangumi(long seasonId)
         {
             SeasonID = seasonId;
             FetchInfo();
@@ -32,15 +32,15 @@ namespace BilibiliMonitor.BilibiliAPI
 
         public BangumiModel.Episode LastEp { get; set; }
 
-        public int LastID { get; set; }
+        public long LastID { get; set; }
 
         public string Name { get; set; }
 
         public bool ReFetchFlag { get; set; }
 
-        public int SeasonID { get; set; }
+        public long SeasonID { get; set; }
 
-        public List<int> UsedID { get; set; } = new();
+        public List<long> UsedID { get; set; } = new();
 
         public void DownloadPic()
         {
