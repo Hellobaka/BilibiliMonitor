@@ -41,8 +41,6 @@
 
         public class Stat
         {
-            public long aid { get; set; }
-
             public long view { get; set; }
 
             public long danmaku { get; set; }
@@ -53,19 +51,7 @@
 
             public long coin { get; set; }
 
-            public long share { get; set; }
-
-            public long now_rank { get; set; }
-
-            public long his_rank { get; set; }
-
             public long like { get; set; }
-
-            public long dislike { get; set; }
-
-            public string evaluation { get; set; }
-
-            public string argue_msg { get; set; }
         }
     }
 }
