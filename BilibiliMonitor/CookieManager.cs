@@ -21,7 +21,7 @@ namespace BilibiliMonitor
     {
         static CookieManager()
         {
-            SetCookie(Config.GetConfig<string>("Cookies"), Config.GetConfig<string>("RefreshToken"));
+            SetCookie(Config.Cookies, Config.RefreshToken);
         }
 
         private const string PublicKey = "-----BEGIN PUBLIC KEY----- MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLgd2OAkcGVtoE3ThUREbio0Eg Uc/prcajMKXvkCKFCWhJYJcLkcM2DKKcSeFpD/j6Boy538YXnR6VhcuUJOhH2x71 nzPjfdTcqMz7djHum0qSZA0AyCBDABUqCrfNgCiJ00Ra7GmRj+YCK1NJEuewlb40 JNrRuoEUXpabUzGB8QIDAQAB -----END PUBLIC KEY-----";
@@ -66,8 +66,10 @@ namespace BilibiliMonitor
             }
             CurrentRefresh_csrf = CurrentCookieDict["bili_jct"];
 
-            Config.WriteConfig("Cookies", cookie);
-            Config.WriteConfig("RefreshToken", refreshToken);
+            Config.Cookies = cookie;
+            Config.RefreshToken = refreshToken;
+            Config.Instance.SetConfig("Cookies", cookie);
+            Config.Instance.SetConfig("RefreshToken", refreshToken);
         }
 
         public static bool UpdateCookie(bool forced)
@@ -80,8 +82,10 @@ namespace BilibiliMonitor
                     && RefreshCookie(token, out var newToken))
                 {
                     CurrentRefreshToken = newToken;
-                    Config.WriteConfig("Cookies", BuildCookieFromDict(CurrentCookieDict));
-                    Config.WriteConfig("RefreshToken", CurrentRefreshToken);
+                    Config.Cookies = BuildCookieFromDict(CurrentCookieDict);
+                    Config.RefreshToken = CurrentRefreshToken;
+                    Config.Instance.SetConfig("Cookies", Config.Cookies);
+                    Config.Instance.SetConfig("RefreshToken", Config.RefreshToken);
                     return true;
                 }
                 else

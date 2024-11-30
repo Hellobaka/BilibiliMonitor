@@ -50,9 +50,9 @@ namespace BilibiliMonitor.BilibiliAPI
             DownloadPics(video);
             using Image<Rgba32> main = new(652, 1980, Color.White);
             using Image cover =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", video.pic.GetFileNameFromURL()));
+                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", video.pic.GetFileNameFromURL()));
             using Image avatar =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", video.owner.face.GetFileNameFromURL()));
+                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", video.owner.face.GetFileNameFromURL()));
             int height = (int)(cover.Height / (cover.Width / 652.0));
             cover.Mutate(x => x.Resize(652, height));
             main.Mutate(x => x.DrawImage(cover, 1));
@@ -97,17 +97,17 @@ namespace BilibiliMonitor.BilibiliAPI
             // main.Mutate(x => x.DrawText(video.title, bigFont, Color.Black, point));
             point = new PointF(10, point.Y + 9 + charHeight);
 
-            using Image play = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "play.png"));
+            using Image play = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "play.png"));
             play.Mutate(x => x.Resize(16, 16));
-            using Image danmaku = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "danmaku.png"));
+            using Image danmaku = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "danmaku.png"));
             danmaku.Mutate(x => x.Resize(16, 16));
-            using Image like = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "like_video.png"));
+            using Image like = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "like_video.png"));
             like.Mutate(x => x.Resize(48, 48));
-            using Image coin = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "coin_video.png"));
+            using Image coin = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "coin_video.png"));
             coin.Mutate(x => x.Resize(48, 48));
-            using Image favorite = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "fav_video.png"));
+            using Image favorite = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "fav_video.png"));
             favorite.Mutate(x => x.Resize(48, 48));
-            using Image forward = Image.Load(Path.Combine(UpdateChecker.BasePath, "Assets", "forward_video.png"));
+            using Image forward = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "forward_video.png"));
             forward.Mutate(x => x.Resize(48, 48));
 
             main.Mutate(x => x.DrawImage(play, (Point)point, 1));
@@ -185,7 +185,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(10, imgPoint.Y + 48 + 20 + 20);
             main.Mutate(x => x.Crop(652, (int)point.Y));
 
-            string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "Video");
+            string path = Path.Combine(Config.PicSaveBasePath, "BiliBiliMonitor", "Video");
             Directory.CreateDirectory(path);
             string filename = $"{video.aid}.png";
             main.Save(Path.Combine(path, filename));
@@ -286,8 +286,8 @@ namespace BilibiliMonitor.BilibiliAPI
                 return;
             }
 
-            _ = Helper.DownloadFile(data.pic, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-            _ = Helper.DownloadFile(data.owner.face, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            _ = Helper.DownloadFile(data.pic, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+            _ = Helper.DownloadFile(data.owner.face, Path.Combine(Config.BaseDirectory, "tmp")).Result;
         }
 
         /// <summary>

@@ -10,17 +10,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Timers;
 using Path = System.IO.Path;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
     public class Bangumi
     {
-        private string baseEpURL = "https://api.bilibili.com/pgc/web/season/section?season_id=";
+        private const string BaseEpURL = "https://api.bilibili.com/pgc/web/season/section?season_id=";
 
-        private string baseInfoURL = "https://www.biliplus.com/api/bangumi?season=";
-
-        private bool init = true;
+        private const string BaseInfoURL = "https://www.biliplus.com/api/bangumi?season=";
 
         public Bangumi(long seasonId)
         {
@@ -28,7 +27,15 @@ namespace BilibiliMonitor.BilibiliAPI
             FetchInfo();
         }
 
+        public static event Action<Bangumi> OnBanguimiEnded;
+
+        public static event Action<BangumiModel.DetailInfo, BangumiModel.Episode, string> OnBanguimiUpdated;
+
         public BangumiModel.DetailInfo BangumiInfo { get; set; }
+
+        public bool Ended { get; set; }
+
+        public int ErrorCount { get; set; }
 
         public BangumiModel.Episode LastEp { get; set; }
 
@@ -40,7 +47,67 @@ namespace BilibiliMonitor.BilibiliAPI
 
         public long SeasonID { get; set; }
 
-        public List<long> UsedID { get; set; } = new();
+        public List<long> UsedID { get; set; } = [];
+
+        private static List<Bangumi> CheckItems { get; set; } = [];
+
+        private static List<Bangumi> DelayAddItems { get; set; } = [];
+
+        private static List<Bangumi> DelayRemoveItems { get; set; } = [];
+
+        private static Timer UpdateCheck { get; set; }
+
+        private static bool Updating { get; set; }
+
+        public static Bangumi AddBangumi(long seasonId)
+        {
+            if (CheckItems.Any(x => x.SeasonID == seasonId))
+            {
+                return CheckItems.First(x => x.SeasonID == seasonId);
+            }
+
+            Bangumi ban = new(seasonId);
+            if (string.IsNullOrWhiteSpace(ban.Name))
+            {
+                return null;
+            }
+            if (Updating)
+            {
+                DelayAddItems.Add(ban);
+            }
+            else
+            {
+                CheckItems.Add(ban);
+            }
+            StartCheckTimer();
+            return ban;
+        }
+
+        /// <summary>
+        /// 获取当前监听的番剧列表
+        /// </summary>
+        /// <returns>SeasonID、名称</returns>
+        public static List<(long, string)> GetBangumiList()
+        {
+            List<(long, string)> ls = [];
+            foreach (var item in CheckItems)
+            {
+                ls.Add((item.SeasonID, item.Name));
+            }
+            return ls;
+        }
+
+        public static void RemoveBangumi(long seasonId)
+        {
+            if (Updating)
+            {
+                DelayRemoveItems.Add(CheckItems.FirstOrDefault(x => x.SeasonID == seasonId));
+            }
+            else
+            {
+                CheckItems.Remove(CheckItems.FirstOrDefault(x => x.SeasonID == seasonId));
+            }
+        }
 
         public void DownloadPic()
         {
@@ -49,8 +116,8 @@ namespace BilibiliMonitor.BilibiliAPI
                 return;
             }
 
-            _ = Helper.DownloadFile(LastEp?.cover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
-            _ = Helper.DownloadFile(BangumiInfo.result.squareCover, Path.Combine(UpdateChecker.BasePath, "tmp")).Result;
+            _ = Helper.DownloadFile(LastEp?.cover, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+            _ = Helper.DownloadFile(BangumiInfo.result.squareCover, Path.Combine(Config.BaseDirectory, "tmp")).Result;
         }
 
         public string DrawLastEpPic()
@@ -62,9 +129,9 @@ namespace BilibiliMonitor.BilibiliAPI
 
             using Image<Rgba32> main = new(652, 198, Color.White);
             using Image avatar =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", BangumiInfo.result.squareCover.GetFileNameFromURL()));
+                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", BangumiInfo.result.squareCover.GetFileNameFromURL()));
             using Image cover =
-                Image.Load(Path.Combine(UpdateChecker.BasePath, "tmp", LastEp.cover.GetFileNameFromURL()));
+                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", LastEp.cover.GetFileNameFromURL()));
 
             avatar.Mutate(x => x.Resize(48, 48));
             cover.Mutate(x => x.Resize((int)(cover.Width / (cover.Height / 198.0)), 198));
@@ -105,7 +172,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = new(cover.Width + 10, 10);
             main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
 
-            string path = Path.Combine(UpdateChecker.PicPath, "BiliBiliMonitor", "Bangumi");
+            string path = Path.Combine(Config.PicSaveBasePath, "BiliBiliMonitor", "Bangumi");
             Directory.CreateDirectory(path);
             string filename = $"{LastEp.id}.png";
             main.Save(Path.Combine(path, filename));
@@ -119,7 +186,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 return false;
             }
 
-            string text = Helper.Get(baseEpURL + SeasonID).Result;
+            string text = Helper.Get(BaseEpURL + SeasonID).Result;
             BangumiModel.Main json = null;
             try
             {
@@ -127,7 +194,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             catch
             {
-                if (UpdateChecker.Instance.DebugMode)
+                if (Config.DebugMode)
                 {
                     LogHelper.Info("拉取番剧状态", $"Name={Name}, json={text}");
                 }
@@ -135,7 +202,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             if (json.code == 0)
             {
-                if (UpdateChecker.Instance.DebugMode)
+                if (Config.DebugMode)
                 {
                     LogHelper.Info("番剧检查", $"{Name}番剧信息更新成功");
                 }
@@ -153,16 +220,11 @@ namespace BilibiliMonitor.BilibiliAPI
                     UsedID.Add(LastID);
                     FetchInfo();
                     ReFetchFlag = false;
-                    if (init)//初始化
-                    {
-                        init = false;
-                        return false;
-                    }
                     return true;
                 }
                 return false;
             }
-            if (UpdateChecker.Instance.DebugMode)
+            if (Config.DebugMode)
             {
                 LogHelper.Info("更新番剧信息", text, false);
             }
@@ -171,11 +233,11 @@ namespace BilibiliMonitor.BilibiliAPI
 
         public bool FetchInfo()
         {
-            string text = Helper.Get(baseInfoURL + SeasonID).Result;
+            string text = Helper.Get(BaseInfoURL + SeasonID).Result;
             var json = JsonConvert.DeserializeObject<BangumiModel.DetailInfo>(text);
             if (json == null)
             {
-                if (UpdateChecker.Instance.DebugMode)
+                if (Config.DebugMode)
                 {
                     LogHelper.Info("拉取番剧详情", $"name={Name}, json={text}", false);
                 }
@@ -185,7 +247,7 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 BangumiInfo = json;
                 Name = json.result.title;
-                if (UpdateChecker.Instance.DebugMode)
+                if (Config.DebugMode)
                 {
                     LogHelper.Info("LastID", $"{json.result.episodes.Length}: {LastID}");
                     LogHelper.Info("拉取番剧信息", $"{Name} 番剧信息拉取成功");
@@ -194,6 +256,75 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             LogHelper.Info("拉取番剧信息", text, false);
             return false;
+        }
+
+        private static void StartCheckTimer()
+        {
+            if (UpdateCheck == null)
+            {
+                UpdateCheck = new() { Interval = Config.RefreshInterval, AutoReset = true };
+                UpdateCheck.Elapsed += UpdateCheck_Elapsed;
+                UpdateCheck.Start();
+            }
+        }
+
+        private static void UpdateCheck_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (Updating)
+            {
+                return;
+            }
+            Updating = true;
+            foreach (var item in DelayAddItems)
+            {
+                if (item != null)
+                {
+                    CheckItems.Add(item);
+                }
+            }
+            foreach (var item in DelayRemoveItems)
+            {
+                CheckItems.Remove(item);
+            }
+            DelayAddItems = [];
+            DelayRemoveItems = [];
+
+            foreach (var bangumi in CheckItems.Where(x => !x.Ended))
+            {
+                try
+                {
+                    if (bangumi.FetchEPDetail())
+                    {
+                        bangumi.DownloadPic();
+                        string pic = bangumi.DrawLastEpPic();
+                        GC.Collect();
+                        bangumi.ReFetchFlag = false;
+                        bangumi.ErrorCount = 0;
+
+                        LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
+                        OnBanguimiUpdated?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
+                    }
+                    if (bangumi.BangumiInfo.result.is_finish == "1")
+                    {
+                        LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
+                        bangumi.Ended = true;
+                        OnBanguimiEnded?.Invoke(bangumi);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    bangumi.ReFetchFlag = true;
+                    LogHelper.Info("番剧更新", exc.Message + exc.StackTrace, false);
+                    bangumi.ErrorCount++;
+                    if (bangumi.ErrorCount >= Config.BangumiRetryCount)
+                    {
+                        bangumi.ReFetchFlag = false;
+                        bangumi.ErrorCount = 1;
+                    }
+                }
+            }
+            Updating = false;
+            CheckItems.RemoveAll(x => x.Ended);
         }
     }
 }
