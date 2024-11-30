@@ -358,7 +358,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static VideoModel.Data GetVideoInfo(string bvId)
         {
             string url = string.Format(BaseVideoURL, "bvid=" + bvId);
-            if (int.TryParse(bvId, out int aid))
+            if (long.TryParse(bvId, out long aid))
             {
                 url = string.Format(BaseVideoURL, "aid=" + aid);
             }
