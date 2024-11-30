@@ -208,13 +208,22 @@ namespace BilibiliMonitor.BilibiliAPI
                         Path.Combine(Config.BaseDirectory, "tmp")).Result;
                 }
 
-                if (item.modules.module_dynamic != null &&
-                    item.modules.module_dynamic.desc != null &&
-                    item.modules.module_dynamic.desc.rich_text_nodes != null)
+                if (item.modules.module_dynamic?.desc?.rich_text_nodes != null)
                 {
                     foreach (var i in item.modules.module_dynamic.desc.rich_text_nodes)
                     {
                         _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+                    }
+                }
+
+                if (item.modules?.module_interaction?.items != null)
+                {
+                    foreach (var i in item.modules.module_interaction.items)
+                    {
+                        foreach(var j in i?.desc?.rich_text_nodes)
+                        {
+                            _ = Helper.DownloadFile(j.emoji?.icon_url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+                        }
                     }
                 }
 
