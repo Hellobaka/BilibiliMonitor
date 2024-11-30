@@ -41,6 +41,7 @@ namespace BilibiliMonitor
             RefreshInterval = GetConfig("RefreshInterval", 120 * 1000);
             BangumiRetryCount = GetConfig("BangumiRetryCount", 3);
             LiveStreamRetryCount = GetConfig("LiveStreamRetryCount", 3);
+            DynamicRetryCount = GetConfig("DynamicRetryCount", 3);
             DebugMode = GetConfig("DebugMode", false);
         }
     }
