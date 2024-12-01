@@ -1,31 +1,27 @@
 ﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
-using SixLabors.Fonts;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using Path = System.IO.Path;
+using static BilibiliMonitor.Models.DynamicModel;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
     public class Videos
     {
-        private static string BaseUserInfoURL = "http://api.bilibili.com/x/web-interface/card?mid={0}";
+        private const string BaseUserInfoURL = "http://api.bilibili.com/x/web-interface/card?mid={0}";
 
-        private static string BaseVideoTagURL = "https://api.bilibili.com/x/tag/archive/tags?bvid={0}";
+        private const string BaseVideoTagURL = "https://api.bilibili.com/x/tag/archive/tags?bvid={0}";
 
-        private static string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
+        private const string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
 
-        private static Dictionary<string, string> shortURLCache { get; set; } = new();
+        private static Dictionary<string, string> ShortURLCache { get; set; } = [];
 
         public static string DrawVideoPic(string id)
         {
@@ -48,142 +44,99 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             DownloadPics(video);
-            using Image<Rgba32> main = new(652, 1980, Color.White);
-            using Image cover =
-                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", video.pic.GetFileNameFromURL()));
-            using Image avatar =
-                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", video.owner.face.GetFileNameFromURL()));
-            int height = (int)(cover.Height / (cover.Width / 652.0));
-            cover.Mutate(x => x.Resize(652, height));
-            main.Mutate(x => x.DrawImage(cover, 1));
-            Color gray = Rgba32.ParseHex("#6d757a");
-            PointF point = new(10, height + 12);
 
-            using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
-            avatar.Mutate(x => x.Resize(48, 48));
-            IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
-            avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            main.Mutate(x => x.DrawImage(avatarFrame, (Point)point, 1));
+            int width = 720;
+            int height = 1980;
+            int avatarWidth = 48;
+            int smallIconWidth = 16;
+            int largeIconWidth = 48;
+            float smallFontSize = 14;
+            float middleFontSize = 18;
+            float largeFontSize = 20;
+            SKColor gray = SKColor.Parse("#6d757a");
+            SKColor nameColor = string.IsNullOrEmpty(user.card.vip.nickname_color) ? SKColors.Black : SKColor.Parse(user.card.vip.nickname_color);
+            
+            using Painting main = new (width, height);
+            string avatarPath = Path.Combine(Config.BaseDirectory, "tmp", video.owner.face.GetFileNameFromURL());
+            string coverPath = Path.Combine(Config.BaseDirectory, "tmp", video.pic.GetFileNameFromURL());
+            using var avatar = main.LoadImage(avatarPath);
+            using var cover = main.LoadImage(coverPath);
 
-            Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
-            Font midFont = SystemFonts.CreateFont("Microsoft YaHei", 18);
-            Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            TextOptions option = new(smallFont);
-            point = new(10 + 48 + 5, height + 12);
-            var size = TextMeasurer.Measure(video.owner.name, option);
-            Color nameColor = string.IsNullOrEmpty(user.card.vip.nickname_color) ? Color.Black : Rgba32.ParseHex(user.card.vip.nickname_color);
-            main.Mutate(x => x.DrawText(video.owner.name, midFont, nameColor, point));
-            point = new(point.X, point.Y + size.Height + 7);
-            main.Mutate(x => x.DrawText($"{user.card.fans.ParseNum2Chinese()}粉丝 {user.archive_count.ParseNum2Chinese()}个投稿", smallFont, gray, point));
-            point = new(10, point.Y + 30);
+            float coverResizeHeight = cover.Height / (cover.Width / main.Width);
+            main.DrawImage(cover, new SKRect { Right = main.Width, Bottom = coverResizeHeight });
+            main.DrawImage(main.CreateCircularImage(avatar, avatarWidth), new SKRect { Left = 10, Top = coverResizeHeight + 12, Size = new() { Width=avatarWidth, Height=avatarWidth } });
+            
+            var textArea = new SKRect() { Left = 10, Right = main.Width - 10 };
+            var textP = main.DrawRelativeText(video.owner.name, textArea, new SKPoint { X = avatarWidth + 5, Y = coverResizeHeight + 12 }, nameColor, middleFontSize);
+            textP = main.DrawRelativeText($"{user.card.fans.ParseNum2Chinese()}粉丝 {user.archive_count.ParseNum2Chinese()}个投稿", textArea, new SKPoint { X = avatarWidth + 5, Y = textP.Y + 7 }, gray, smallFontSize);
+            textP = main.DrawRelativeText(video.title, textArea, new SKPoint { Y = textP.Y + 20 }, SKColors.Black, largeFontSize);
 
-            option = new TextOptions(bigFont)
-            {
-                TextAlignment = TextAlignment.Start,
-                VerticalAlignment = VerticalAlignment.Center,
-                WrappingLength = main.Width - 10,
-                Origin = point
-            };
-            size = TextMeasurer.Measure(video.title, option);
-            int padding = (int)point.X, chargap = 1, maxWidth = 632;
-            float maxCharWidth = 0, charHeight = 0;
-            main.Mutate(x =>
-            {
-                foreach (var c in video.title)
-                {
-                    DrawString(x, c, Color.Black, ref point, option, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                }
-            });
-            // main.Mutate(x => x.DrawText(video.title, bigFont, Color.Black, point));
-            point = new PointF(10, point.Y + 9 + charHeight);
+            using var play = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "play.png"));
+            using var danmaku = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "danmaku.png"));
+            using var like = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "like_video.png"));
+            using var coin = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "coin_video.png"));
+            using var favorite = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "fav_video.png"));
+            using var forward = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "forward_video.png"));
 
-            using Image play = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "play.png"));
-            play.Mutate(x => x.Resize(16, 16));
-            using Image danmaku = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "danmaku.png"));
-            danmaku.Mutate(x => x.Resize(16, 16));
-            using Image like = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "like_video.png"));
-            like.Mutate(x => x.Resize(48, 48));
-            using Image coin = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "coin_video.png"));
-            coin.Mutate(x => x.Resize(48, 48));
-            using Image favorite = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "fav_video.png"));
-            favorite.Mutate(x => x.Resize(48, 48));
-            using Image forward = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "forward_video.png"));
-            forward.Mutate(x => x.Resize(48, 48));
+            float baseY = textP.Y + 10;
+            main.DrawImage(play, new SKRect { Top = baseY, Left = 10, Size = new() { Width = smallIconWidth, Height= smallIconWidth } });
+            textP = main.DrawRelativeText(Helper.ParseLongNumber(video.stat.view), textArea, new SKPoint { X = smallIconWidth + 2, Y = textP.Y + 10 }, gray, smallFontSize);
+            main.DrawImage(danmaku, new SKRect { Top = baseY, Left = textP.X + 10, Size = new() { Width = smallIconWidth, Height = smallIconWidth } });
+            textP = main.DrawRelativeText(Helper.ParseLongNumber(video.stat.danmaku), textArea, new SKPoint { X = textP.X + smallIconWidth + 2, Y = baseY }, gray, smallFontSize);
+            textP = main.DrawRelativeText(Helper.TimeStamp2DateTime(video.pubdate).ToString("G"), textArea, new SKPoint { X = textP.X + 10, Y = baseY }, gray, smallFontSize);
 
-            main.Mutate(x => x.DrawImage(play, (Point)point, 1));
-            point = new PointF(point.X + play.Width + 2, point.Y);
-            string playNum = Helper.ParseLongNumber(video.stat.view);
-            option = new TextOptions(smallFont);
-            size = TextMeasurer.Measure(playNum, option);
-            main.Mutate(x => x.DrawText(playNum, smallFont, gray, point));
-            point = new(point.X + 10 + size.Width, point.Y);
-            main.Mutate(x => x.DrawImage(danmaku, (Point)point, 1));
-            point = new(point.X + danmaku.Width + 2, point.Y);
-            string danmakuNum = Helper.ParseLongNumber(video.stat.danmaku);
-            size = TextMeasurer.Measure(danmakuNum, option);
-            main.Mutate(x => x.DrawText(danmakuNum, smallFont, gray, point));
-            point = new PointF(point.X + size.Width + 10, point.Y);
-            main.Mutate(x => x.DrawText(Helper.TimeStamp2DateTime(video.pubdate).ToString("G"), smallFont, gray, point));
+            baseY = textP.Y + 10;
+            textP = main.DrawRelativeText(video.bvid, textArea, new SKPoint { Y = baseY }, gray, smallFontSize);
+            textP = main.DrawRelativeText($"AV{video.aid}", textArea, new SKPoint { X = textP.X + 10, Y = baseY }, gray, smallFontSize);
+            
+            textP = main.DrawRelativeText(video.desc, textArea, new SKPoint { Y = textP.Y + 10 }, gray, smallFontSize);
 
-            point = new(10, point.Y + 16 + 10);
-            size = TextMeasurer.Measure(video.bvid, option);
-            main.Mutate(x => x.DrawText(video.bvid, smallFont, gray, point));
-            point = new(point.X + size.Width + 10, point.Y);
-            main.Mutate(x => x.DrawText($"AV{video.aid}", smallFont, gray, point));
-
-            point = new(10, point.Y + 30);
-            padding = (int)point.X;
-            chargap = 1;
-            maxWidth = 632;
-            maxCharWidth = 0;
-            charHeight = 0;
-            main.Mutate(x =>
-            {
-                foreach (var c in video.desc)
-                {
-                    DrawString(x, c, Rgba32.ParseHex("#6d757a"), ref point, option, padding, chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                }
-            });
-            point = new(10, point.Y + charHeight + 20);
-
+            baseY = textP.Y + 20;
+            textP = new(0, baseY);
+            SKSize size = new();
             foreach (var item in tag)
             {
-                size = TextMeasurer.Measure(item.tag_name, option);
-                if (point.X + size.Width + 14 > maxWidth)
+                size = main.MeasureString(item.tag_name, smallFontSize);
+                if (textP.X + size.Width + 14 > main.Width - 10)
                 {
-                    point = new(10, point.Y + size.Height + 8 + 10);
+                    baseY += size.Height + 18;
+                    textP = new(0, baseY);
                 }
-                IPath container = new RectangularPolygon(point.X, point.Y, size.Width + 14, size.Height + 8);
-                main.Mutate(x => x.Fill(Color.ParseHex("#F6F7F8"), container));
-                point = new(point.X + 7, point.Y + 4);
-                main.Mutate(x => x.DrawText(item.tag_name, smallFont, gray, point));
-                point = new(point.X + container.Bounds.Width + 10, point.Y - 4);
+                main.DrawRectangle(new SKRect { Left = textP.X + 10, Top = baseY, Size = new() { Width = size.Width + 14, Height = size.Height + 8 } }, SKColor.Parse("#F6F7F8"));
+                textP = main.DrawRelativeText(item.tag_name, textArea, new SKPoint { X = textP.X + 7, Y = baseY + 4 }, gray, smallFontSize);
+                textP = new (textP.X + 7 + 10, baseY);
             }
-            point = new(10, point.Y + 40);
 
-            PointF imgPoint = new(point.X + 20, point.Y + 20);
-            main.Mutate(x => x.DrawImage(like, (Point)imgPoint, 1));
+            // 左右Padding80，间隔 = ((Width-padding*2) - (largeIconWidth * 4)) / 3
+            baseY = textP.Y + 40;
+            textP = new(0, baseY);
+            float padding = ((main.Width - 80 * 2) - (largeIconWidth * 4)) / 3;
+
+            var imgPoint = new SKPoint(80, baseY);
+            main.DrawImage(like, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
             string text = Helper.ParseLongNumber(video.stat.like);
-            size = TextMeasurer.Measure(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
-            imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
-            main.Mutate(x => x.DrawImage(coin, (Point)imgPoint, 1));
+            size = main.MeasureString(text, smallFontSize);
+            textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
+            
+            imgPoint = new(imgPoint.X + padding + largeIconWidth, imgPoint.Y);
+            main.DrawImage(coin, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
             text = Helper.ParseLongNumber(video.stat.coin);
-            size = TextMeasurer.Measure(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
-            imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
-            main.Mutate(x => x.DrawImage(favorite, (Point)imgPoint, 1));
+            size = main.MeasureString(text, smallFontSize);
+            textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
+            
+            imgPoint = new(imgPoint.X + padding + largeIconWidth, imgPoint.Y);
+            main.DrawImage(favorite, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
             text = Helper.ParseLongNumber(video.stat.favorite);
-            size = TextMeasurer.Measure(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
-            imgPoint = new(imgPoint.X + 48 + 20 + 110, imgPoint.Y);
-            main.Mutate(x => x.DrawImage(forward, (Point)imgPoint, 1));
-            text = Helper.ParseLongNumber(video.stat.reply);
-            size = TextMeasurer.Measure(text, option);
-            main.Mutate(x => x.DrawText(text, smallFont, gray, (Point)new PointF(imgPoint.X + 24 - (size.Width / 2), point.Y + 78)));
+            size = main.MeasureString(text, smallFontSize);
+            textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
 
-            point = new(10, imgPoint.Y + 48 + 20 + 20);
-            main.Mutate(x => x.Crop(652, (int)point.Y));
+            imgPoint = new(imgPoint.X + padding + largeIconWidth, imgPoint.Y);
+            main.DrawImage(forward, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
+            text = Helper.ParseLongNumber(video.stat.reply);
+            size = main.MeasureString(text, smallFontSize);
+            textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
+
+            main.Resize((int)main.Width, (int)textP.Y + 20);
 
             string path = Path.Combine(Config.PicSaveBasePath, "BiliBiliMonitor", "Video");
             Directory.CreateDirectory(path);
@@ -224,18 +177,18 @@ namespace BilibiliMonitor.BilibiliAPI
                     url = "https://" + url;
                 }
 
-                if (shortURLCache.ContainsKey(url))
+                if (ShortURLCache.ContainsKey(url))
                 {
-                    return shortURLCache[url];
+                    return ShortURLCache[url];
                 }
 
                 using var http = new HttpClient();
                 var r = http.GetAsync(url);
                 r.Wait();
                 string bvid = r.Result.RequestMessage.RequestUri.AbsoluteUri;
-                if (!shortURLCache.ContainsKey(url))
+                if (!ShortURLCache.ContainsKey(url))
                 {
-                    shortURLCache.Add(url, bvid);
+                    ShortURLCache.Add(url, bvid);
                 }
 
                 url = bvid;
@@ -269,9 +222,9 @@ namespace BilibiliMonitor.BilibiliAPI
                     return string.Empty;
                 }
 
-                if (!shortURLCache.ContainsKey(match.Groups[1].Value))
+                if (!ShortURLCache.ContainsKey(match.Groups[1].Value))
                 {
-                    shortURLCache.Add(match.Groups[1].Value, res);
+                    ShortURLCache.Add(match.Groups[1].Value, res);
                 }
 
                 return res;
@@ -288,55 +241,6 @@ namespace BilibiliMonitor.BilibiliAPI
 
             _ = Helper.DownloadFile(data.pic, Path.Combine(Config.BaseDirectory, "tmp")).Result;
             _ = Helper.DownloadFile(data.owner.face, Path.Combine(Config.BaseDirectory, "tmp")).Result;
-        }
-
-        /// <summary>
-        /// 分字符绘制，处理emoji
-        /// </summary>
-        /// <returns>总字符高度</returns>
-        private static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
-        {
-            return DrawString(img, c.ToString(), color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-        }
-
-        /// <summary>
-        /// 文本绘制
-        /// </summary>
-        /// <returns>总字符高度</returns>
-        private static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point, TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight, float totalHeight = 0)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return totalHeight;
-            }
-
-            FontRectangle charSize = new();
-            try
-            {
-                charSize = TextMeasurer.Measure(text, option);
-            }
-            catch
-            {
-                return totalHeight;
-            }
-            charHeight = Math.Max(charSize.Height, charHeight);
-            if (totalHeight == 0)
-            {
-                totalHeight = charHeight;
-            }
-
-            if (text == "\n")
-            {
-                point.X = padding;
-                point.Y += charHeight + 2;
-                totalHeight += charHeight + 2;
-                return totalHeight;
-            }
-            maxCharWidth = Math.Max(maxCharWidth, charSize.Width);
-            var pointClone = new PointF(point.X, point.Y);//在表达式内无法使用ref
-            img.DrawText(text.ToString(), option.Font, color, pointClone);
-            totalHeight = WrapTest(maxWidth, padding, charGap, charSize, ref point, totalHeight);
-            return totalHeight;
         }
 
         private static UserInfoModel.Data GetUserInfo(long mid)
@@ -389,24 +293,6 @@ namespace BilibiliMonitor.BilibiliAPI
                 Debug.WriteLine(json.message);
             }
             return null;
-        }
-
-        /// <summary>
-        /// 换行
-        /// </summary>
-        private static float WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point, float totalHeight)
-        {
-            if (point.X + charSize.Width >= maxWidth)
-            {
-                point.X = padding;
-                point.Y += charSize.Height + 2;
-                totalHeight += charSize.Height + 2;
-            }
-            else
-            {
-                point.X += charSize.Width;
-            }
-            return totalHeight;
         }
     }
 }

@@ -1,17 +1,12 @@
 ﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
-using SixLabors.Fonts;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Timers;
-using Path = System.IO.Path;
+using static BilibiliMonitor.Models.LiveStreamsModel;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -117,7 +112,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             _ = Helper.DownloadFile(LastEp?.cover, Path.Combine(Config.BaseDirectory, "tmp")).Result;
-            _ = Helper.DownloadFile(BangumiInfo.result.squareCover, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+            _ = Helper.DownloadFile(BangumiInfo.result.square_cover, Path.Combine(Config.BaseDirectory, "tmp")).Result;
         }
 
         public string DrawLastEpPic()
@@ -126,51 +121,30 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 return string.Empty;
             }
+            int avatarSize = 48;
+            int width = 720;
+            int height = 200;
+            float smallFontSize = 16;
+            float largeFontSize = 24;
+            SKColor gray = SKColor.Parse("#99a2aa");
 
-            using Image<Rgba32> main = new(652, 198, Color.White);
-            using Image avatar =
-                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", BangumiInfo.result.squareCover.GetFileNameFromURL()));
-            using Image cover =
-                Image.Load(Path.Combine(Config.BaseDirectory, "tmp", LastEp.cover.GetFileNameFromURL()));
+            using Painting main = new(width, height);
+            string avatarPath = Path.Combine(Config.BaseDirectory, "tmp", BangumiInfo.result.square_cover.GetFileNameFromURL());
+            string coverPath = Path.Combine(Config.BaseDirectory, "tmp", LastEp.cover.GetFileNameFromURL());
 
-            avatar.Mutate(x => x.Resize(48, 48));
-            cover.Mutate(x => x.Resize((int)(cover.Width / (cover.Height / 198.0)), 198));
+            using var avatar = main.LoadImage(avatarPath);
+            using var cover = main.LoadImage(coverPath);
+            float resizeCoverWidth = (float)(cover.Width / (cover.Height / main.Height));
+            main.DrawImage(cover, new SKRect { Bottom = main.Height, Right = resizeCoverWidth });
+            main.DrawImage(main.CreateCircularImage(avatar, avatarSize), new SKRect { Left = resizeCoverWidth + 10, Top = 10, Size = new() { Width = avatarSize, Height= avatarSize } });
 
-            main.Mutate(x => x.DrawImage(cover, new Point(0, 0), 1));
-            using Image<Rgba32> Info = new(652 - cover.Width - 20, 178, Color.White);
-
-            using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
-            IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
-            avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            Info.Mutate(x => x.DrawImage(avatarFrame, new Point(0, 0), 1));
-
-            Font smallFont = SystemFonts.CreateFont("Microsoft YaHei", 14);
-            Font bigFont = SystemFonts.CreateFont("Microsoft YaHei", 20);
-            TextOptions option = new(smallFont);
-            PointF point = new(48 + 5, 15);
-            var size = TextMeasurer.Measure(Name, option);
-            Info.Mutate(x => x.DrawText(Name, smallFont, Color.Black, point));
-            point = new(point.X + size.Width + 5, point.Y);
-            Info.Mutate(x => x.DrawText("更新了", smallFont, Rgba32.ParseHex("#99a2aa"), point));
-            point = new(10, point.Y + 60);
-            option = new TextOptions(bigFont)
-            {
-                TextAlignment = TextAlignment.Start,
-                VerticalAlignment = VerticalAlignment.Center,
-                WrappingLength = Info.Width,
-                Origin = point
-            };
-            Info.Mutate(x => x.DrawText(option, LastEp.long_title, Color.Black));
-            point = new(10, 178 - 20);
-            string epCount = $"第{LastEp.title}话";
-            Info.Mutate(x => x.DrawText(epCount, smallFont, Rgba32.ParseHex("#99a2aa"), point));
-            option = new TextOptions(smallFont);
-            size = TextMeasurer.Measure(epCount, option);
-            point = new(point.X + size.Width, point.Y);
-            Info.Mutate(x => x.DrawText($" · {DateTime.Now:G}", smallFont, Rgba32.ParseHex("#99a2aa"), point));
-
-            point = new(cover.Width + 10, 10);
-            main.Mutate(x => x.DrawImage(Info, (Point)point, 1));
+            // 从封面 + 10，到右侧边缘 - 10
+            SKRect textArea = new() { Left = resizeCoverWidth + 10, Right = main.Width - 10 };
+            var textP = main.DrawRelativeText(Name, textArea, new SKPoint() { X = avatarSize + 5, Y = avatarSize / 2 - smallFontSize / 2 }, SKColors.Black, smallFontSize);
+            textP = main.DrawRelativeText("更新了", new() { Left = resizeCoverWidth + 10 + avatarSize + 5, Right = main.Width - 10 }, new SKPoint() { X = textP.X + 5, Y = textP.Y - smallFontSize }, gray, smallFontSize);
+            textP = main.DrawText(LastEp.long_title, textArea, new SKPoint() { X = resizeCoverWidth + 10, Y = avatarSize + 20 }, SKColors.Black, largeFontSize);
+            textP = main.DrawText($"第{LastEp.title}话", textArea, new SKPoint() { X = resizeCoverWidth + 10, Y = main.Height - 30 }, gray, smallFontSize);
+            textP = main.DrawText($" · {DateTime.Now:G}", textArea, new SKPoint() { X = textP.X, Y = main.Height - 30 }, gray, smallFontSize);
 
             string path = Path.Combine(Config.PicSaveBasePath, "BiliBiliMonitor", "Bangumi");
             Directory.CreateDirectory(path);
