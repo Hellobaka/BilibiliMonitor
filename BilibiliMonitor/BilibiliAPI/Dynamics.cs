@@ -1,5 +1,6 @@
 ﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,37 +12,24 @@ namespace BilibiliMonitor.BilibiliAPI
 {
     public class Dynamics
     {
-        private static string emojiStore = "";
+        private const string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
 
         public Dynamics(long uid)
         {
             UID = uid;
-            EmojiFont = new FontCollection().Add(Path.Combine(Config.BaseDirectory, "Assets", "seguiemj.ttf"));
-            FanNumFont = new FontCollection().Add(Path.Combine(Config.BaseDirectory, "Assets", "fannum.ttf"));
         }
 
         public static event Action<DynamicModel.Item, long, string> OnDynamicUpdated;
 
-        public List<(string, DateTime)> Cached { get; set; } = new();
+        public List<(string, DateTime)> Cached { get; set; } = [];
 
-        public List<DynamicModel.Item> DynamicList { get; set; } = new();
-
-        public int ErrorCount { get; set; }
+        public List<DynamicModel.Item> DynamicList { get; set; } = [];
 
         public string LastDynamicID { get; set; }
-
-        public DynamicModel.Item LatestDynamic
-        {
-            get { return DynamicList.Find(x => x.id_str == LastDynamicID); }
-        }
-
-        public bool ReFetchFlag { get; set; } = false;
 
         public long UID { get; set; }
 
         public string UserName { get; set; }
-
-        private const string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
 
         private static List<Dynamics> CheckItems { get; set; } = [];
 
@@ -49,13 +37,19 @@ namespace BilibiliMonitor.BilibiliAPI
 
         private static List<Dynamics> DelayRemoveItems { get; set; } = [];
 
-        private static FontFamily EmojiFont { get; set; }
-
-        private static FontFamily FanNumFont { get; set; }
-
         private static Timer UpdateCheck { get; set; }
 
         private static bool Updating { get; set; }
+
+        private int CanvasMinWidth { get; set; } = 720;
+
+        private int CanvasWidth { get; set; } = 720;
+
+        private int ErrorCount { get; set; }
+
+        private DynamicModel.Item LatestDynamic => DynamicList.FirstOrDefault(x => x.id_str == LastDynamicID);
+
+        private bool ReFetchFlag { get; set; } = false;
 
         public static Dynamics AddDynamic(long uid)
         {
@@ -182,21 +176,11 @@ namespace BilibiliMonitor.BilibiliAPI
                     Path.Combine(Config.BaseDirectory, "tmp")).Result;
                 if (item.modules.module_dynamic.major?.archive != null)
                 {
-                    if (!item.modules.module_dynamic.major.archive.cover.EndsWith(".webp"))
-                    {
-                        item.modules.module_dynamic.major.archive.cover += "@203w_127h_1c.webp";
-                    }
-
                     _ = Helper.DownloadFile(item.modules.module_dynamic.major.archive.cover,
                         Path.Combine(Config.BaseDirectory, "tmp")).Result;
                 }
                 if (item.modules.module_dynamic.major?.article != null)
                 {
-                    if (!item.modules.module_dynamic.major.article.covers[0].EndsWith(".webp"))
-                    {
-                        item.modules.module_dynamic.major.article.covers[0] += "@518w_120h_1c.webp";
-                    }
-
                     _ = Helper.DownloadFile(item.modules.module_dynamic.major.article.covers[0],
                         Path.Combine(Config.BaseDirectory, "tmp")).Result;
                 }
@@ -221,42 +205,34 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
 
                 int picCount = item.modules.module_dynamic.major?.draw?.items.Length ?? 0;
-                if (picCount != 0)
+                int minWidth = int.MaxValue;
+                int minHeight = int.MaxValue;
+                foreach (var i in item.modules.module_dynamic.major?.draw?.items ?? [])
                 {
-                    foreach (var i in item.modules.module_dynamic.major?.draw?.items)
-                    {
-                        if (i.src.Contains(".gif"))
-                        {
-                            continue;
-                        }
-
-                        string webp = ".webp";
-                        if (i.height / (double)i.width > 3)
-                        {
-                            webp = picCount == 1 ? "240w_320h_!header" + webp : "104w_104h_!header" + webp;
-                        }
-                        else
-                        {
-                            if (picCount == 1)
-                            {
-                                //if (i.width > i.height)
-                                //{
-                                //    webp = "320w_180h_1e_1c" + webp;
-                                //}
-                                //else
-                                //{
-                                //    webp = "480w_640h_1e_1c" + webp;
-                                //}
-                            }
-                            else
-                            {
-                                webp = "104w_104h_1e_1c" + webp;
-                            }
-                        }
-
-                        i.src += "@" + webp;
-                        _ = Helper.DownloadFile(i.src, Path.Combine(Config.BaseDirectory, "tmp")).Result;
-                    }
+                    // 2图时，每图至少480px
+                    // 3图时，每图至少360px
+                    // 最小图片依照最大图片的尺寸, 缩放至原本大小, 后放置在容器中心
+                    // 1图时, 图片最大720px, 容器随图片尺寸变化, 有最小宽度限制
+                    _ = Helper.DownloadFile(i.src, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+                    minWidth = Math.Min(i.width, minWidth);
+                    minHeight = Math.Min(i.height, minHeight);
+                }
+                if (picCount <= 0)
+                {
+                    CanvasWidth = CanvasMinWidth;
+                }
+                else if (picCount == 1)
+                {
+                    CanvasWidth = Math.Max(720 + 10 * 4, CanvasMinWidth);
+                }
+                else if (picCount == 2)
+                {
+                    CanvasWidth = Math.Max(480 * 2 + 10 + 10 * 4, CanvasMinWidth);
+                }
+                else
+                {
+                    // 图片尺寸 + gap + padding
+                    CanvasWidth = Math.Max(360 * 3 + 10 * 2 + 10 * 4, CanvasMinWidth);
                 }
 
                 if (item.type == "DYNAMIC_TYPE_FORWARD")
@@ -303,77 +279,55 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             int padding = 10;
+            int avatarSize = 48;
+            int pendantSize = 72;
+            Painting main = new Painting(CanvasWidth, 6000);
 
-            using Image<Rgba32> main = new(652, 30000, new Rgba32(244, 245, 247));
-            //TODO: 未知内存溢出
-            using Image<Rgba32> background = new(632, 30000, Color.White);
+            // 头像
+            string avatarPath = Path.Combine(Config.BaseDirectory, "tmp", item.modules.module_author.face.GetFileNameFromURL());
+            using var avatar = main.LoadImage(avatarPath);
+            main.DrawImage(main.CreateCircularImage(avatar, avatarSize), new SKRect { Left = 14, Top = 14, Size = new() { Width = avatarSize, Height = avatarSize } });
 
-            int left = 78;
-            //TODO: 提取方法
-            //头像
-            Size avatarSize = new(48);
-            using Image avatar = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                item.modules.module_author.face.GetFileNameFromURL()));
-            avatar.Mutate(x => x.Resize(avatarSize));
-            using Image<Rgba32> avatarFrame = new(48, 48, new Rgba32(255, 255, 255, 0));
-            IPath circle = new EllipsePolygon(avatarFrame.Width / 2, avatarFrame.Height / 2, avatarFrame.Width / 2);
-            avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            background.Mutate(x => x.DrawImage(avatarFrame, new Point(14, 14), 1));
-
+            // 头像框
             if (!string.IsNullOrWhiteSpace(item.modules.module_author.pendant.image))
             {
-                using Image pendant = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                    item.modules.module_author.pendant.image.GetFileNameFromURL()));
-                pendant.Mutate(x => x.Resize(new Size(72, 72)));
-                background.Mutate(x => x.DrawImage(pendant, new Point(2, 2), 1));
+                using var pendant = main.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.modules.module_author.pendant.image.GetFileNameFromURL()));
+                main.DrawImage(pendant, new SKRect { Left = 2, Top = 2, Size = new() { Width = pendantSize, Height = pendantSize } });
             }
-            //认证
 
-            //标题
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 16);
-            Color nameColor = Color.Black;
+            // 用户名
+            SKColor nameColor = SKColors.Black;
             if (item.modules.module_author.vip?.status == 1)
             {
                 try
                 {
-                    nameColor = Color.ParseHex(item.modules.module_author.vip.nickname_color);
+                    nameColor = SKColor.Parse(item.modules.module_author.vip.nickname_color);
                 }
                 catch
                 {
                     LogHelper.Info("颜色异常", $"color: {item.modules.module_author.vip.nickname_color}", false);
-                    nameColor = Color.Black;
                 }
             }
+            var textP = main.DrawText(item.modules.module_author.name, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = 14 }, nameColor, 16);
+            string text = $"{Helper.TimeStamp2DateTime(item.modules.module_author.pub_ts):G}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
+            textP = main.DrawText(text, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = textP.Y + 3 }, new SKColor(153, 162, 170), 16);
 
-            background.Mutate(x => x.DrawText(item.modules.module_author.name, font, nameColor, new PointF(left, 27)));
-            font = SystemFonts.CreateFont("Microsoft YaHei", 12);
-            string text =
-                $"{Helper.TimeStamp2DateTime(item.modules.module_author.pub_ts):G}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
-            background.Mutate(x => x.DrawText(text, font, new Rgba32(153, 162, 170), new PointF(left, 27 + 24)));
             //装扮
             if (item.modules.module_author.decorate != null)
             {
-                using Image decorate = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                    item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
+                using var decorate = main.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.modules.module_author.decorate?.card_url.GetFileNameFromURL()));
                 switch (item.modules.module_author.decorate.type)
                 {
                     case 3:
-                        decorate.Mutate(x => x.Resize(146, 44));
+                        main.DrawImage(decorate, new() { Left = main.Width - 10 - 146, Top = 18, Size = new() { Width = 146, Height = 44 } });
                         if (item.modules.module_author.decorate?.fan != null)
                         {
-                            decorate.Mutate(x => x.DrawText(item.modules.module_author.decorate.fan.num_str,
-                                FanNumFont.CreateFont(12),
-                                Color.ParseHex(item.modules.module_author.decorate.fan.color), new PointF(48, 17)));
+                            main.DrawText(item.modules.module_author.decorate.fan.num_str, Painting.Anywhere, new SKPoint(main.Width - 10 - 100, 32), SKColor.Parse(item.modules.module_author.decorate.fan.color), 12, SKTypeface.FromFile(Path.Combine(Config.BaseDirectory, "Assets", "fannum.ttf")));
                         }
-
-                        background.Mutate(x => x.DrawImage(decorate,
-                            new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
                         break;
 
                     case 1:
-                        decorate.Mutate(x => x.Resize(60, 34));
-                        background.Mutate(x => x.DrawImage(decorate,
-                            new Point(background.Width - padding - 24 - decorate.Width, 18), 1));
+                        main.DrawImage(decorate, new() { Left = main.Width - 10 - 60, Top = 18, Size = new() { Width = 60, Height = 34 } });
                         break;
 
                     default:
@@ -381,50 +335,43 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
             }
 
-            //文本
-            PointF point = new(78, 73);
-            background.Mutate(x => RenderRichText(item, x, ref point));
-            point = new(78, point.Y + 5);
+            // 正文
+            SKPoint point = new(padding, 73);
+            RenderRichText(item, ref main, ref point);
+            point = new(padding, point.Y + 5);
             switch (item.type)
             {
                 case "DYNAMIC_TYPE_DRAW":
-                    point = new(78, point.Y + 10);
-                    background.Mutate(x => DrawMajorImage(item.modules.module_dynamic.major.draw, x, ref point));
+                    point = new(padding, point.Y + 10);
+                    DrawMajorImage(item.modules.module_dynamic.major.draw, ref main, ref point, padding);
                     break;
 
                 case "DYNAMIC_TYPE_AV":
-                    point = new(78, point.Y + 10);
-                    background.Mutate(x => DrawVideoElement(item.modules.module_dynamic.major.archive, x, ref point));
+                    point = new(padding, point.Y + 10);
+                    DrawVideoElement(item.modules.module_dynamic.major.archive, ref main, ref point, (int)(main.Width - padding * 2));
                     break;
 
                 case "DYNAMIC_TYPE_FORWARD":
-                    point = new(78, point.Y + 10);
-                    background.Mutate(x => DrawForward(item.orig, x, ref point));
+                    point = new(padding, point.Y + 10);
+                    DrawForward(item.orig, ref main, ref point);
                     break;
 
                 case "DYNAMIC_TYPE_ARTICLE":
-                    point = new(78, point.Y + 10);
-                    background.Mutate(x => DrawArticle(item.modules.module_dynamic.major.article, x, ref point));
+                    point = new(padding, point.Y + 10);
+                    DrawArticle(item.modules.module_dynamic.major.article, ref main, ref point);
                     break;
             }
 
-            if (item.modules.module_dynamic.additional != null)
-            {
-                point = new(78, point.Y + 20);
-                background.Mutate(x => DrawAddition(item.modules.module_dynamic.additional, x, ref point));
-            }
+            DrawInteractive(item.modules.module_interaction, ref main, ref point);
+            DrawStat(item.modules.module_stat, ref main, ref point);
 
-            background.Mutate(x => DrawInteractive(item.modules.module_interaction, x, ref point));
-            background.Mutate(x => DrawStat(item.modules.module_stat, x, ref point));
-
-            background.Mutate(x => x.Crop(background.Width, (int)point.Y + padding));
-            main.Mutate(x => x.Crop(main.Width, background.Height + (padding * 2)));
-            main.Mutate(x => x.DrawImage(background, new Point(padding, padding), 1));
-
+            main.Resize((int)main.Width, (int)point.Y + padding);
+            main.Padding(padding, padding, padding, padding, new SKColor(244, 245, 247));
             string path = Path.Combine(Config.PicSaveBasePath, "BiliBiliMonitor", "Dynamic");
             Directory.CreateDirectory(path);
             string filename = $"{item.id_str}.png";
             main.Save(Path.Combine(path, filename));
+            main.Dispose();
             return Path.Combine("BiliBiliMonitor", "Dynamic", filename);
         }
 
@@ -495,89 +442,6 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// 分字符绘制，处理emoji
-        /// </summary>
-        /// <returns>总字符高度</returns>
-        private static float DrawString(IImageProcessingContext img, char c, Color color, ref PointF point,
-            TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight,
-            float totalHeight = 0)
-        {
-            string target;
-            if (c.JudgeEmoji())
-            {
-                emojiStore += c;
-                return totalHeight;
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(emojiStore))
-                {
-                    target = c.ToString();
-                }
-                else
-                {
-                    emojiStore += c;
-                    target = emojiStore;
-                    option = new(EmojiFont.CreateFont(option.Font.Size));
-                }
-
-                emojiStore = "";
-            }
-
-            if (string.IsNullOrWhiteSpace(target))
-            {
-                target = c.ToString();
-            }
-
-            return DrawString(img, target, color, ref point, option, padding, charGap, ref maxCharWidth, maxWidth,
-                ref charHeight, totalHeight);
-        }
-
-        /// <summary>
-        /// 文本绘制
-        /// </summary>
-        /// <returns>总字符高度</returns>
-        private static float DrawString(IImageProcessingContext img, string text, Color color, ref PointF point,
-            TextOptions option, int padding, int charGap, ref float maxCharWidth, int maxWidth, ref float charHeight,
-            float totalHeight = 0)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return totalHeight;
-            }
-
-            FontRectangle charSize = new();
-            try
-            {
-                charSize = TextMeasurer.Measure(text, option);
-            }
-            catch
-            {
-                return totalHeight;
-            }
-
-            charHeight = Math.Max(charSize.Height, charHeight);
-            if (totalHeight == 0)
-            {
-                totalHeight = charHeight;
-            }
-
-            if (text == "\n")
-            {
-                point.X = padding;
-                point.Y += charHeight + 2;
-                totalHeight += charHeight + 2;
-                return totalHeight;
-            }
-
-            maxCharWidth = Math.Max(maxCharWidth, charSize.Width);
-            var pointClone = new PointF(point.X, point.Y); //在表达式内无法使用ref
-            img.DrawText(text, option.Font, color, pointClone);
-            totalHeight = WrapTest(maxWidth, padding, charGap, charSize, ref point, totalHeight);
-            return totalHeight;
         }
 
         private static void StartCheckTimer()
@@ -652,125 +516,21 @@ namespace BilibiliMonitor.BilibiliAPI
             Updating = false;
         }
 
-        /// <summary>
-        /// 换行
-        /// </summary>
-        private static float WrapTest(int maxWidth, int padding, int charGap, FontRectangle charSize, ref PointF point,
-            float totalHeight)
+        private void DrawArticle(DynamicModel.Article item, ref Painting img, ref SKPoint point, int elementWidth = 520)
         {
-            if (point.X + charSize.Width >= maxWidth)
-            {
-                point.X = padding;
-                point.Y += charSize.Height + 2;
-                totalHeight += charSize.Height + 2;
-            }
-            else
-            {
-                point.X += charSize.Width + charGap;
-            }
+            var initPoint = new SKPoint(point.X, point.Y);
+            using var cover = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.covers[0].GetFileNameFromURL()));
+            float imgHeight = cover.Width / (cover.Width / elementWidth) + 68;
+            img.DrawRectangle(new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = elementWidth, Height = imgHeight } }, SKColors.White, new SKColor(229, 233, 239), 1);
+            img.DrawImage(cover, new SKRect { Location = point, Size = new SKSize { Width = elementWidth, Height = imgHeight } });
 
-            return totalHeight;
-        }
+            point = new(point.X + 16, point.Y + imgHeight + 5);
 
-        /// <summary>
-        /// 绘制附加元素
-        /// </summary>
-        private IImageProcessingContext DrawAddition(DynamicModel.Additional item, IImageProcessingContext img,
-            ref PointF point)
-        {
-            PointF initalPoint = new(point.X, point.Y);
-            if (item == null)
-            {
-                return img;
-            }
-
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-            TextOptions options = new(font);
-            int padding = 0, chargap = 0, maxWidth = 470;
-            float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
-            using Image<Rgba32> textImg = new(maxWidth, 100, Rgba32.ParseHex("#FFFFFF00"));
-            textImg.Mutate(x =>
-            {
-                PointF point = new(padding, 0);
-                switch (item.type)
-                {
-                    case "ADDITIONAL_TYPE_RESERVE":
-                        foreach (var c in item.reserve.title)
-                        {
-                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap,
-                                ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
-
-                        point = new(padding, point.Y + charHeight);
-                        totalHeight += charHeight;
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in item.reserve.desc1.text)
-                        {
-                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap,
-                                ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
-
-                        break;
-
-                    case "ADDITIONAL_TYPE_VOTE":
-                        foreach (var c in item.vote.desc)
-                        {
-                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap,
-                                ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
-
-                        point = new(padding, point.Y + charHeight);
-                        totalHeight += charHeight;
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in "结束时间：" + Helper.TimeStamp2DateTime(item.vote.end_time))
-                        {
-                            totalHeight = DrawString(x, c, Color.Black, ref point, options, padding, chargap,
-                                ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
-
-                        break;
-                }
-            });
-            point = new(initalPoint.X, point.Y + 5);
-            IPath container = new RectangularPolygon(initalPoint.X, initalPoint.Y + 5, 532, totalHeight + 15);
-            img.Fill(new Rgba32(244, 245, 247), container);
-            point = new(point.X + 10, point.Y + 10);
-            img.DrawImage(textImg, (Point)point, 1);
-
-            point = new(initalPoint.X, initalPoint.Y + totalHeight + 10);
-            return img;
-        }
-
-        private IImageProcessingContext DrawArticle(DynamicModel.Article item, IImageProcessingContext img, ref PointF point, int startX = 78, int elementWidth = 520)
-        {
-            Point initialPoint = (Point)point;
-            IPath container = new RectangularPolygon(startX, point.Y, elementWidth, 219);
-            img.Fill(Color.White, container);
-            img.Draw(Pens.Solid(new Rgba32(229, 233, 239), 1), container);
-            using var cover = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                item.covers[0].GetFileNameFromURL()));
-            img.DrawImage(cover, (Point)point, 1);
-
-            point = new(startX + 16, point.Y + 120 + 5);
-
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 16, FontStyle.Regular);
-            TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 0, maxWidth = elementWidth - 28 + startX;
-            float maxCharWidth = 0, charHeight = 0;
             if (item.title.Length > 50)
             {
                 item.title = item.title.Substring(0, 48) + "..";
             }
-
-            foreach (var c in item.title)
-            {
-                DrawString(img, c, Color.Black, ref point, options, padding, chargap, ref maxCharWidth, maxWidth,
-                    ref charHeight);
-            }
-
-            point = new(padding, point.Y + charHeight + 5);
+            point = img.DrawText(item.title, new SKRect { Left = point.X, Right = point.X + elementWidth - 16 }, point, SKColors.Black, 16);
 
             if (item.desc.Length > 74)
             {
@@ -782,380 +542,285 @@ namespace BilibiliMonitor.BilibiliAPI
                 int first = item.desc.IndexOf('\n');
                 item.desc = item.desc.Substring(0, item.desc.IndexOf('\n', first + 1)) + "..";
             }
+            point = new SKPoint(initPoint.X, point.Y + 5);
+            point = img.DrawText(item.desc, new SKRect { Left = point.X, Right = point.X + elementWidth - 16 }, point, new SKColor(102, 102, 102), 14);
 
-            font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-            options = new(font);
-            foreach (var c in item.desc)
-            {
-                DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap,
-                    ref maxCharWidth, maxWidth, ref charHeight);
-            }
-
-            point = new Point(startX, initialPoint.Y + 219);
-            return img;
+            point = new SKPoint(point.X, point.Y + 5);
         }
 
         /// <summary>
         /// 绘制转发
         /// </summary>
-        private IImageProcessingContext DrawForward(DynamicModel.Item item, IImageProcessingContext img,
-            ref PointF point)
+        private void DrawForward(DynamicModel.Item item, ref Painting img, ref SKPoint point)
         {
-            PointF initalPoint = new(point.X, point.Y);
+            SKPoint initalPoint = new(point.X, point.Y);
             if (item == null)
             {
-                return img;
+                return;
             }
-
-            using Image<Rgba32> main = new(499, 10000, Color.Transparent);
-
-            PointF p = new(0, 0);
-            using var avatar = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                item.modules.module_author.face.GetFileNameFromURL()));
-            avatar.Mutate(x => x.Resize(new Size(24, 24)));
-            IPath circle = new EllipsePolygon(avatar.Width / 2, avatar.Height / 2, avatar.Width / 2);
-            using Image<Rgba32> avatarFrame = new(24, 24, new Rgba32(255, 255, 255, 0));
-            avatarFrame.Mutate(x => x.Fill(new ImageBrush(avatar), circle));
-            main.Mutate(x => x.DrawImage(avatarFrame, (Point)p, 1));
+            // 转发模块双倍padding
+            int padding = 10;
+            int width = CanvasWidth - padding * 4;
+            Painting main = new(width, 10000);
+            main.Clear(new(244, 245, 247));
+            SKPoint p = new(0, 0);
+            using var avatar = main.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.modules.module_author.face.GetFileNameFromURL()));
+            main.DrawImage(main.CreateCircularImage(avatar, 24), new SKRect { Location = p, Size = new(24, 24) });
 
             p = new(p.X + 24 + 8, p.Y + 3);
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-            main.Mutate(x => x.DrawText(item.modules.module_author.name, font, new Rgba32(0, 161, 214), p));
-            var charSize = TextMeasurer.Measure(item.modules.module_author.name, new TextOptions(font));
-            p = new(p.X + (int)charSize.Width + 8, p.Y);
+            p = main.DrawText(item.modules.module_author.name, Painting.Anywhere, p, new(0, 161, 214), 12);
+            p = main.DrawText(item.modules.module_author.pub_action, Painting.Anywhere, new(p.X + 8, p.Y - 12), SKColors.Black, 12);
+            p = new(0, p.Y + 12 + 5);
 
-            main.Mutate(x => x.DrawText(item.modules.module_author.pub_action, font, Color.Black, p));
-
-            p = new(0, p.Y + charSize.Height + 5);
-
-            main.Mutate(x => RenderRichText(item, x, ref p, 0));
+            RenderRichText(item, ref main, ref p, 0);
 
             p = new(0, p.Y + 5);
             switch (item.type)
             {
                 case "DYNAMIC_TYPE_DRAW":
-                    main.Mutate(x => DrawMajorImage(item.modules.module_dynamic.major.draw, x, ref p, 0));
+                    DrawMajorImage(item.modules.module_dynamic.major.draw, ref main, ref p, 0);
                     break;
 
                 case "DYNAMIC_TYPE_AV":
-                    main.Mutate(x => DrawVideoElement(item.modules.module_dynamic.major.archive, x, ref p, 0, 495));
+                    DrawVideoElement(item.modules.module_dynamic.major.archive, ref main, ref p, width);
                     break;
             }
 
-            IPath container = new RectangularPolygon(initalPoint.X, initalPoint.Y, 532, p.Y + 20);
-            img.Fill(new Rgba32(244, 245, 247), container);
-            img.DrawImage(main, (Point)new PointF(initalPoint.X + 10, initalPoint.Y + 10), 1);
-            point = new(initalPoint.X, initalPoint.Y + p.Y + 10);
-            return img;
+            img.DrawRectangle(new(initalPoint.X, initalPoint.Y, width + padding * 2 + initalPoint.X, p.Y + 20 + initalPoint.Y), new(244, 245, 247), SKColors.Black, 0);
+            main.Resize((int)main.Width, (int)p.Y + 10);
+            img.DrawImage(main.SnapShot(), new SKRect { Location = new(initalPoint.X + 10, initalPoint.Y + 10), Size = new(main.Width, main.Height) });
+            point = new(initalPoint.X, initalPoint.Y + p.Y + 20 + 10);
+            main.Dispose();
         }
 
         /// <summary>
         /// 绘制热评
         /// </summary>
-        private IImageProcessingContext DrawInteractive(DynamicModel.Module_Interaction item,
-            IImageProcessingContext img, ref PointF point)
+        private void DrawInteractive(DynamicModel.Module_Interaction item, ref Painting img, ref SKPoint point)
         {
             if (item == null || item.items?.Length == 0)
             {
-                return img;
+                return;
             }
+            int padding = 10;
+            int fontSize = 16;
+            SKPoint initalPoint = new(point.X, point.Y);
+            point = new(point.X + padding, point.Y + 2);
 
-            PointF initalPoint = new(point.X, point.Y);
-            point = new(78 + 8, point.Y + 5);
-
-            using var comment = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
-            comment.Mutate(x => x.Resize(16, 16));
-            img.DrawImage(comment, (Point)point, 1);
-            point = new(point.X + 14 + 8, point.Y);
-
-            string text = "";
-            foreach (var i in item.items[0].desc.rich_text_nodes)
-            {
-                text += i.orig_text;
-            }
-
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-            TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 0, maxWidth = 610 - 12;
-            float maxCharWidth = 0, charHeight = 0, totalHeight = 0;
+            using var comment = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
+            img.DrawImage(comment, new SKRect { Location = point, Size = new SKSize(18, 18) });
+            point = new(point.X + 16 + 8, point.Y - 2);
             foreach (var node in item.items[0].desc.rich_text_nodes)
             {
                 switch (node.type)
                 {
-                    case "RICH_TEXT_NODE_TYPE_AT":
-                        foreach (var c in node.text)
-                        {
-                            totalHeight = DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
-
-                        break;
-
                     case "RICH_TEXT_NODE_TYPE_TEXT":
-                        foreach (var c in node.text)
-                        {
-                            totalHeight = DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight, totalHeight);
-                        }
+                    case "RICH_TEXT_NODE_TYPE_AT":
+                        point = img.DrawText(node.text.Replace("\r", " ").Replace("\n", " "), new SKRect { Left = initalPoint.X, Right = CanvasWidth - padding }, point, SKColor.Parse("#6d757a"), fontSize);
+                        point = new SKPoint(point.X, point.Y - fontSize);
 
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_EMOJI":
-                        var emoji = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                            node.emoji.icon_url.GetFileNameFromURL()));
-                        emoji.Mutate(x => x.Resize(new Size(20, 20)));
-                        img.DrawImage(emoji, (Point)point, 1); // ? point
+                        using (var emoji = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), node.emoji.icon_url.GetFileNameFromURL())))
+                        {
+                            img.DrawImage(emoji, new SKRect { Location = point, Size = new(20, 20) });
+                            point = new SKPoint(point.X + 20, point.Y);
+                        }
                         break;
 
                     default:
                         break;
                 }
             }
-
-            IPath dash = new RectangularPolygon(initalPoint.X, initalPoint.Y + 5, 2, totalHeight);
-            img.Fill(Rgba32.ParseHex("#e7e7e7"), dash);
+            img.DrawRectangle(new SKRect { Location = initalPoint, Size = new(2, fontSize + 6) }, SKColor.Parse("#e7e7e7"), SKColors.Black, 0);
 
             point = new(initalPoint.X, point.Y + 10);
-            return img;
         }
 
         /// <summary>
         /// 绘制图片元素
         /// </summary>
-        private IImageProcessingContext DrawMajorImage(DynamicModel.Draw item, IImageProcessingContext img,
-            ref PointF point, int startX = 78)
+        private void DrawMajorImage(DynamicModel.Draw item, ref Painting img, ref SKPoint point, int startX = 10, int padding = 0)
         {
-            PointF initalPoint = new(point.X, point.Y);
+            SKPoint initalPoint = new(point.X, point.Y);
 
             int picCount = (int)(item?.items.Length);
+            int imgMaxWidth = 0;
             if (picCount == 1)
             {
                 var i = item.items[0];
-                if (i.src.Contains(".gif"))
+                using var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), i.src.GetFileNameFromURL()));
+                imgMaxWidth = 720 - padding * 2;
+                int width = image.Width;
+                int height = image.Height;
+                if (image.Width > imgMaxWidth)
                 {
-                    return img;
+                    width = imgMaxWidth;
+                    height = (int)(image.Height * (imgMaxWidth / (float)image.Width));
                 }
-
-                using Image image = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                    i.src.GetFileNameFromURL()));
-                if (image.Width > 500)
-                {
-                    image.Mutate(x =>
-                    {
-                        x.Resize(500, (int)(image.Height * (500 / (float)image.Width)));
-                    });
-                }
-                img.DrawImage(image, (Point)point, 1);
-                point = new(startX, point.Y + image.Height);
+                img.DrawImage(image, new SKRect { Location = point, Size = new(width, height) });
+                point = new(startX, point.Y + height + 10);
             }
             else
             {
-                if (picCount == 4)
+                imgMaxWidth = picCount == 4 ? 480 : 360;
+                imgMaxWidth -= padding * 2;
+                for (int index = 1; index <= picCount; index++)
                 {
-                    for (int index = 1; index <= picCount; index++)
+                    var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
+                    if (image.Width >= imgMaxWidth && image.Height >= imgMaxWidth)
                     {
-                        if (item.items[index - 1].src.Contains(".gif"))
+                        // 缩小后，剪裁顶部
+                        if (image.Width > image.Height)
                         {
-                            continue;
+                            int width = (int)(image.Width / (image.Height / (imgMaxWidth * 1.0f)));
+                            image = img.ResizeImage(image, width, imgMaxWidth);
                         }
-
-                        using Image tmp = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                            item.items[index - 1].src.GetFileNameFromURL()));
-                        img.DrawImage(tmp, (Point)point, 1);
-                        point = index % 2 == 0 ? new(startX, point.Y + 108) : new(point.X + 108, point.Y);
+                        else
+                        {
+                            int height = (int)(image.Height / (image.Width / (imgMaxWidth * 1.0f)));
+                            image = img.ResizeImage(image, imgMaxWidth, height);
+                        }
+                        image = image.Subset(new SKRectI { Location = new(), Size = new(imgMaxWidth, imgMaxWidth) });
+                    }
+                    else if (image.Width >= imgMaxWidth && image.Height < imgMaxWidth)
+                    {
+                        // 剪裁左侧
+                        image = image.Subset(new SKRectI { Location = new(), Size = new(image.Height, image.Height) });
+                    }
+                    else if (image.Width < imgMaxWidth && image.Height >= imgMaxWidth)
+                    {
+                        // 剪裁顶部
+                        image = image.Subset(new SKRectI { Location = new(), Size = new(image.Width, image.Width) });
+                    }
+                    else
+                    {
+                        // 在中心绘制
+                        using Painting frame = new(imgMaxWidth, imgMaxWidth);
+                        frame.DrawRectangle(new SKRect { Size = new(imgMaxWidth, imgMaxWidth) }, SKColors.White, SKColors.Gray, 1);
+                        frame.DrawImage(image, new SKRect { Location = new(imgMaxWidth / 2 - image.Width / 2, imgMaxWidth / 2 - image.Height / 2), Size = new(image.Width, image.Height) });
+                        image.Dispose();
+                        image = frame.SnapShot();
+                    }
+                    img.DrawImage(image, new SKRect { Location = point, Size = new(imgMaxWidth, imgMaxWidth) });
+                    image.Dispose();
+                    if (picCount == 4)
+                    {
+                        point = index % 2 == 0 ? new(startX, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
+                    }
+                    else
+                    {
+                        point = index % 3 == 0 ? new(startX, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
                     }
                 }
-                else
-                {
-                    for (int index = 1; index <= picCount; index++)
-                    {
-                        if (item.items[index - 1].src.Contains(".gif"))
-                        {
-                            continue;
-                        }
-
-                        using Image tmp = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                            item.items[index - 1].src.GetFileNameFromURL()));
-                        img.DrawImage(tmp, (Point)point, 1);
-                        point = index % 3 == 0 && index != picCount ? new(startX, point.Y + 108) : new(point.X + 108, point.Y);
-                    }
-
-                    point = new(initalPoint.X, point.Y + 108);
-                }
+                // point = new SKPoint(initalPoint.X, point.Y + imgMaxWidth + 10);
             }
-
-            return img;
         }
 
         /// <summary>
         /// 绘制动态数据
         /// </summary>
-        private IImageProcessingContext DrawStat(DynamicModel.Module_Stat item, IImageProcessingContext img,
-            ref PointF point)
+        private void DrawStat(DynamicModel.Module_Stat item, ref Painting img, ref SKPoint point)
         {
             if (item == null)
             {
-                return img;
+                return;
             }
-
-            PointF initalPoint = new(point.X, point.Y);
+            int iconSize = 16;
+            int fontSize = 16;
+            SKPoint initalPoint = new(point.X, point.Y);
             point = new(point.X, point.Y + 20);
-            using var forward = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "forward.png"));
-            forward.Mutate(x => x.Resize(16, 16));
-            using var comment = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
-            comment.Mutate(x => x.Resize(16, 16));
-            using var like = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "like.png"));
-            like.Mutate(x => x.Resize(16, 16));
+            using var forward = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "forward.png"));
+            using var comment = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
+            using var like = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "like.png"));
 
-            img.DrawImage(forward, (Point)point, 1);
-            point = new(point.X + 16 + 4, point.Y);
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-            TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 0, maxWidth = 610 - 12;
-            float maxCharWidth = 0, charHeight = 0;
-            foreach (var c in item.forward.count.ParseNum2Chinese())
-            {
-                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth,
-                    maxWidth, ref charHeight);
-            }
+            img.DrawImage(forward, new SKRect { Location = point, Size = new(iconSize, iconSize) });
+            point = new(point.X + iconSize + 4, point.Y - 2);
+            point = img.DrawText(Helper.ParseLongNumber(item.forward.count), Painting.Anywhere, point, SKColor.Parse("#6d757a"), fontSize);
+            point = new(point.X + 20, point.Y - fontSize + 2);
 
-            point = new(point.X + 20, point.Y);
+            img.DrawImage(comment, new SKRect { Location = point, Size = new(iconSize, iconSize) });
+            point = new(point.X + iconSize + 4, point.Y - 2);
+            point = img.DrawText(Helper.ParseLongNumber(item.comment.count), Painting.Anywhere, point, SKColor.Parse("#6d757a"), fontSize);
+            point = new(point.X + 20, point.Y - fontSize + 2);
 
-            img.DrawImage(comment, (Point)point, 1);
-            point = new(point.X + 16 + 4, point.Y);
-            foreach (var c in item.comment.count.ParseNum2Chinese())
-            {
-                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth,
-                    maxWidth, ref charHeight);
-            }
-
-            point = new(point.X + 20, point.Y);
-
-            img.DrawImage(like, (Point)point, 1);
-            point = new(point.X + 16 + 4, point.Y);
-            foreach (var c in item.like.count.ParseNum2Chinese())
-            {
-                DrawString(img, c, Rgba32.ParseHex("#6d757a"), ref point, options, padding, chargap, ref maxCharWidth,
-                    maxWidth, ref charHeight);
-            }
-
-            point = new(initalPoint.X, point.Y + 16);
-            return img;
+            img.DrawImage(like, new SKRect { Location = point, Size = new(iconSize, iconSize) });
+            point = new(point.X + iconSize + 4, point.Y - 2);
+            point = img.DrawText(Helper.ParseLongNumber(item.like.count), Painting.Anywhere, point, SKColor.Parse("#6d757a"), fontSize);
         }
 
         /// <summary>
         /// 绘制视频元素
         /// </summary>
-        private IImageProcessingContext DrawVideoElement(DynamicModel.Archive item, IImageProcessingContext img,
-            ref PointF point, int startX = 78, int elementWidth = 532)
+        private void DrawVideoElement(DynamicModel.Archive item, ref Painting img, ref SKPoint point, int elementWidth = 100)
         {
-            Point initialPoint = (Point)point;
-            IPath container = new RectangularPolygon(startX, point.Y, elementWidth, 127);
-            img.Fill(Color.White, container);
-            img.Draw(Pens.Solid(new Rgba32(229, 233, 239), 1), container);
-            using var cover = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                item.cover.GetFileNameFromURL()));
-            img.DrawImage(cover, (Point)point, 1);
-            container = new RectangularPolygon(startX + 137, point.Y + 8, 58, 18);
-            img.Fill(Rgba32.ParseHex(item.badge.bg_color), container);
-            Font font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Bold);
-            img.DrawText(item.badge.text, font, Rgba32.ParseHex(item.badge.color),
-                (Point)new PointF(startX + 137 + 5, point.Y + 8));
-            point = new(startX + 203 + 16, point.Y + 9);
+            SKPoint initialPoint = new(point.X, point.Y);
+            using var cover = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.cover.GetFileNameFromURL()));
+            float imgWidth = elementWidth * 0.33f;
+            float imgHeight = cover.Height / (cover.Width / imgWidth);
+            img.DrawRectangle(new(point.X, point.Y, elementWidth, point.Y + imgHeight), SKColors.White, new(229, 233, 239), 1);
+            img.DrawImage(cover, new() { Location = point, Size = new(imgWidth, imgHeight) });
 
-            font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-            TextOptions options = new(font);
-            int padding = (int)point.X, chargap = 0, maxWidth = elementWidth - 28 + startX;
-            float maxCharWidth = 0, charHeight = 0;
-            if (item.title.Length > 42)
+            int titleFontSize = 20;
+            int bodyFontSize = 16;
+
+            if (item.badge != null && !string.IsNullOrEmpty(item.badge.text))
             {
-                item.title = item.title.Substring(0, 40) + "..";
+                var size = img.MeasureString(item.badge.text, 12);
+                int paddingLeft = 5, paddingTop = 2;
+                img.DrawRectangle(new SKRect() { Left = initialPoint.X + imgWidth - size.Width - 10 - paddingLeft * 2, Top = point.Y + 8, Size = new(size.Width + paddingLeft * 2, size.Height + paddingTop * 2) }, SKColor.Parse(item.badge.bg_color), SKColors.Black, 0);
+
+                img.DrawText(item.badge.text, Painting.Anywhere, new(initialPoint.X + imgWidth - size.Width - 10 - paddingLeft, point.Y + 8 + paddingTop), SKColors.White, 12);
             }
 
-            foreach (var c in item.title)
-            {
-                DrawString(img, c, Color.Black, ref point, options, padding, chargap, ref maxCharWidth, maxWidth,
-                    ref charHeight);
-            }
+            point = new(0, initialPoint.Y + 5);
+            point = img.DrawRelativeText(item.title, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, titleFontSize);
+            point = new(0, point.Y + 10);
 
-            point = new(padding, point.Y + charHeight + 5);
-            if (item.desc.Length > 44)
-            {
-                item.desc = item.desc.Substring(0, 44) + "..";
-            }
-
-            if (item.desc.Count(x => x == '\n') >= 2)
-            {
-                int first = item.desc.IndexOf('\n');
-                item.desc = item.desc.Substring(0, item.desc.IndexOf('\n', first + 1)) + "..";
-            }
-
-            font = SystemFonts.CreateFont("Microsoft YaHei", 12, FontStyle.Regular);
-            options = new(font);
-            foreach (var c in item.desc)
-            {
-                DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap,
-                    ref maxCharWidth, maxWidth, ref charHeight);
-            }
+            point = img.DrawRelativeText(item.desc, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, bodyFontSize);
+            point = new(initialPoint.X + imgWidth + 10, point.Y - bodyFontSize);
 
             // stat
-            point = new(padding, initialPoint.Y + 109);
-            using var play = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "play.png"));
-            play.Mutate(x => x.Resize(14, 14));
-            img.DrawImage(play, (Point)point, 1);
-            point = new(point.X + 16, initialPoint.Y + 107);
-            foreach (var c in item.stat.play)
-            {
-                DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap,
-                    ref maxCharWidth, maxWidth, ref charHeight);
-            }
+            point = new(initialPoint.X + imgWidth + 10, initialPoint.Y + imgHeight - 20);
+            using var play = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "play.png"));
+            img.DrawImage(play, new() { Location = point, Size = new(14, 14) });
+            point = new(point.X + 16, point.Y);
+            point = img.DrawText(item.stat.play, Painting.Anywhere, point, new(102, 102, 102), 12);
+            point = new(point.X + 16, point.Y - 12);
 
-            point = new(point.X + 16, point.Y + 2);
-            using var danmaku = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "danmaku.png"));
-            danmaku.Mutate(x => x.Resize(14, 14));
-            img.DrawImage(danmaku, (Point)point, 1);
-            point = new(point.X + 16, initialPoint.Y + 107);
-            foreach (var c in item.stat.danmaku)
-            {
-                DrawString(img, c, new Color(new Rgba32(102, 102, 102)), ref point, options, padding, chargap,
-                    ref maxCharWidth, maxWidth, ref charHeight);
-            }
+            using var danmaku = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "danmaku.png"));
+            img.DrawImage(danmaku, new() { Location = point, Size = new(14, 14) });
+            point = new(point.X + 16, point.Y);
+            point = img.DrawText(item.stat.danmaku, Painting.Anywhere, point, new(102, 102, 102), 12);
 
-            point = new Point(startX, initialPoint.Y + 127);
-            return img;
+            point = new(initialPoint.X, initialPoint.Y + imgHeight + 5);
         }
 
         /// <summary>
         /// 绘制文本
         /// </summary>
-        private IImageProcessingContext RenderRichText(DynamicModel.Item item, IImageProcessingContext img,
-            ref PointF point, int padding = 78)
+        private void RenderRichText(DynamicModel.Item item, ref Painting img, ref SKPoint point, int padding = 14)
         {
-            PointF initalPoint = new(point.X, point.Y);
+            SKPoint initalPoint = new(point.X, point.Y);
 
             if (item == null)
             {
-                return img;
+                return;
             }
-
-            Font font;
-            TextOptions options;
-            int chargap = 0, maxWidth = 459 + padding;
-            float maxCharWidth = 0, charHeight = 0;
+            int bodyFontSize = 18;
             if (item.modules.module_dynamic.topic != null)
             {
-                using var topic = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
-                topic.Mutate(x => x.Resize(18, 18));
-                img.DrawImage(topic, (Point)point, 1);
-                point = new(point.X + 18, point.Y);
-                font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-                img.DrawText(item.modules.module_dynamic.topic.name, font, new Rgba32(0, 138, 197), point);
+                using var topic = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
+                img.DrawImage(topic, new SKRect { Location = initalPoint, Size = new() { Width = 18, Height = 18 } });
+                point = new(point.X + 22, point.Y);
+                img.DrawText(item.modules.module_dynamic.topic.name, Painting.Anywhere, point, new SKColor(0, 138, 197), bodyFontSize);
                 point = new(initalPoint.X, point.Y + 20);
             }
 
             if (item.modules.module_dynamic.desc == null)
             {
-                return img;
+                return;
             }
 
             foreach (var node in item.modules.module_dynamic.desc?.rich_text_nodes)
@@ -1163,79 +828,44 @@ namespace BilibiliMonitor.BilibiliAPI
                 switch (node.type)
                 {
                     case "RICH_TEXT_NODE_TYPE_TEXT":
-                        font = SystemFonts.CreateFont("Microsoft YaHei Light", 14, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in node.text)
-                        {
-                            DrawString(img, c, Color.Black, ref point, options, padding, chargap, ref maxCharWidth,
-                                maxWidth, ref charHeight);
-                        }
-
+                        point = img.DrawText(node.text, new SKRect { Left = initalPoint.X, Right = CanvasWidth - padding }, point, SKColors.Black, bodyFontSize);
+                        point.Y -= bodyFontSize;
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_EMOJI":
-                        var emoji = Image.Load(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"),
-                            node.emoji.icon_url.GetFileNameFromURL()));
-                        emoji.Mutate(x => x.Resize(new Size(20, 20)));
-                        img.DrawImage(emoji, (Point)point, 1);
+                        using (var emoji = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), node.emoji.icon_url.GetFileNameFromURL())))
+                        {
+                            img.DrawImage(emoji, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 20, Height = 20 } });
+                        }
                         point = new(point.X + 20, point.Y);
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_LOTTERY":
-                        using (Image gift = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "gift.png")))
+                        using (var gift = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "gift.png")))
                         {
-                            gift.Mutate(x => x.Resize(18, 18));
-                            img.DrawImage(gift, (Point)point, 1);
-                            point = new(point.X + 22, point.Y);
+                            img.DrawImage(gift, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 18, Height = 18 } });
                         }
-
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in "互动抽奖")
-                        {
-                            DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                        }
+                        point = new(point.X + 22, point.Y);
+                        point = img.DrawText("互动抽奖", Painting.Anywhere, point, new SKColor(23, 139, 207), bodyFontSize);
+                        point.Y -= bodyFontSize;
 
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_WEB":
-                        using (Image url = Image.Load(Path.Combine(Config.BaseDirectory, "Assets", "url.png")))
+                        using (var url = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "url.png")))
                         {
-                            url.Mutate(x => x.Resize(18, 18));
-                            img.DrawImage(url, (Point)point, 1);
-                            point = new(point.X + 22, point.Y);
+                            img.DrawImage(url, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 18, Height = 18 } });
                         }
-
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in "跳转网址")
-                        {
-                            DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                        }
-
-                        break;
-
-                    case "RICH_TEXT_NODE_TYPE_TOPIC":
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in node.text)
-                        {
-                            DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                        }
+                        point = new(point.X + 22, point.Y);
+                        point = img.DrawText("跳转网址", Painting.Anywhere, point, new SKColor(23, 139, 207), bodyFontSize);
+                        point.Y -= bodyFontSize;
 
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_AT":
-                        font = SystemFonts.CreateFont("Microsoft YaHei", 14, FontStyle.Regular);
-                        options = new(font);
-                        foreach (var c in node.text)
-                        {
-                            DrawString(img, c, new Color(new Rgba32(23, 139, 207)), ref point, options, padding,
-                                chargap, ref maxCharWidth, maxWidth, ref charHeight);
-                        }
+                    case "RICH_TEXT_NODE_TYPE_TOPIC":
+                        point = img.DrawText(node.text, Painting.Anywhere, point, new SKColor(23, 139, 207), bodyFontSize);
+                        point.Y -= bodyFontSize;
 
                         break;
 
@@ -1245,7 +875,6 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             point = new(initalPoint.X, point.Y + 20);
-            return img;
         }
     }
 }
