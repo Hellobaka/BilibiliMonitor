@@ -47,7 +47,7 @@
 
             public string season_id { get; set; }
 
-            public string squareCover { get; set; }
+            public string square_cover { get; set; }
 
             public string title { get; set; }
         }
