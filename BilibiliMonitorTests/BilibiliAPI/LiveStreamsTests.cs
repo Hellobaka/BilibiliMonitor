@@ -14,9 +14,10 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void FetchLiveStreamTest()
         {
-            Assert.IsTrue(true);
-            //LiveStreams.AddUID(692283831);
-            //Console.WriteLine(LiveStreams.LiveStreamData[692283831].live_status);
+            LiveStreams liveStreams = new LiveStreams(1838190318);
+            liveStreams.FetchRoomInfo();
+            liveStreams.DownloadPics();
+            Console.WriteLine(liveStreams.DrawLiveStreamPic());
         }
     }
 }

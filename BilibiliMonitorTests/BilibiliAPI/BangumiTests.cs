@@ -14,12 +14,17 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void FetchEPDetailTest()
         {
-            Bangumi bangumi = new Bangumi(42107);
+            Config.CustomFont = "Lolita.ttf";
+
+            Bangumi bangumi = new Bangumi(48029);
             bangumi.FetchEPDetail();
+            Console.WriteLine(bangumi.Name);
             if (bangumi.BangumiInfo.result.is_finish == "1")
             {
                 Console.WriteLine($"番剧完结{bangumi.Name} 已完结，清除监测");
             }
+            bangumi.DownloadPic();
+            Console.WriteLine(bangumi.DrawLastEpPic());
         }
     }
 }
