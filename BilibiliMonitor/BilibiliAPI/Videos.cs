@@ -100,7 +100,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     baseY += size.Height + 18;
                     textP = new(0, baseY);
                 }
-                main.DrawRectangle(new SKRect { Left = textP.X + 10, Top = baseY, Size = new() { Width = size.Width + 14, Height = size.Height + 8 } }, SKColor.Parse("#F6F7F8"));
+                main.DrawRectangle(new SKRect { Left = textP.X + 10, Top = baseY, Size = new() { Width = size.Width + 14, Height = size.Height + 8 } }, SKColor.Parse("#F6F7F8"), SKColors.Black, 0);
                 textP = main.DrawRelativeText(item.tag_name, textArea, new SKPoint { X = textP.X + 7, Y = baseY + 4 }, gray, smallFontSize);
                 textP = new(textP.X + 7 + 10, baseY);
             }

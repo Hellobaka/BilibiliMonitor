@@ -21,6 +21,8 @@ namespace BilibiliMonitor
             }
         }
 
+        public static SKRect Anywhere { get; set; } = new SKRect { Right = int.MaxValue, Bottom = int.MaxValue };
+
         public float Height { get; set; }
 
         public float Width { get; set; }
@@ -40,6 +42,16 @@ namespace BilibiliMonitor
         private SKCanvas MainCanvas => MainSurface.Canvas;
 
         private SKSurface MainSurface { get; set; }
+
+        public void Clear(SKColor color)
+        {
+            MainCanvas.Clear(color);
+        }
+
+        public SKBitmap ConvertToBitmap(SKImage image)
+        {
+            return SKBitmap.FromImage(image);
+        }
 
         /// <summary>
         /// 裁切图片为圆形
@@ -111,7 +123,7 @@ namespace BilibiliMonitor
             MainCanvas.DrawImage(image, rect, AntialiasPaint);
         }
 
-        public void DrawRectangle(SKRect rect, SKColor fillColor)
+        public void DrawRectangle(SKRect rect, SKColor fillColor, SKColor strokeColor, float strokeWidth)
         {
             using var paint = new SKPaint
             {
@@ -121,14 +133,27 @@ namespace BilibiliMonitor
             };
 
             MainCanvas.DrawRect(rect, paint);
+
+            if (strokeWidth == 0)
+            {
+                return;
+            }
+            using var strokePaint = new SKPaint
+            {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                Color = strokeColor,
+                StrokeWidth = strokeWidth
+            };
+            MainCanvas.DrawRect(rect, strokePaint);
         }
 
         /// <summary>
         /// 相对区域坐标绘制
         /// </summary>
-        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null)
+        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null, bool isBold = false)
         {
-            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, customFont);
+            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, customFont, isBold);
         }
 
         /// <summary>
@@ -141,7 +166,7 @@ namespace BilibiliMonitor
         /// <param name="customFont">自定义字体</param>
         /// <param name="fontSize">字体大小</param>
         /// <returns>最后一个字符的右下角坐标</returns>
-        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null)
+        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null, bool isBold = false)
         {
             var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
             float currentX = startPoint.X;
@@ -153,7 +178,7 @@ namespace BilibiliMonitor
                 if (textElement.Contains("\n") || textElement.Contains("\r"))
                 {
                     currentX = area.Left;
-                    currentY += lineHeight;
+                    currentY += fontSize + 3;
                     continue;
                 }
                 var enumerator = StringInfo.GetTextElementEnumerator(textElement);
@@ -200,7 +225,11 @@ namespace BilibiliMonitor
                     currentX = area.Left;
                     currentY += lineHeight;
                 }
-
+                if (area.Bottom != 0 && currentY > area.Bottom)
+                {
+                    currentY -= lineHeight;
+                    break;
+                }
                 MainCanvas.DrawShapedText(textElement, currentX, currentY, paint);
                 currentX += shapedText.Width;
             }
@@ -276,12 +305,38 @@ namespace BilibiliMonitor
             MainSurface = newSurface;
         }
 
+        public SKImage ResizeImage(SKImage image, int newWidth, int newHeight)
+        {
+            var scaledBitmap = new SKBitmap(newWidth, newHeight);
+
+            using (var canvas = new SKCanvas(scaledBitmap))
+            {
+                var paint = new SKPaint
+                {
+                    IsAntialias = true,
+                    FilterQuality = SKFilterQuality.High
+                };
+
+                var srcRect = new SKRect(0, 0, image.Width, image.Height);
+                var destRect = new SKRect(0, 0, newWidth, newHeight);
+
+                canvas.DrawImage(image, srcRect, destRect, paint);
+            }
+
+            return SKImage.FromBitmap(scaledBitmap);
+        }
+
         public void Save(string path)
         {
             using var image = MainSurface.Snapshot();
             using var data = image.Encode();
 
             File.WriteAllBytes(path, data.ToArray());
+        }
+
+        public SKImage SnapShot()
+        {
+            return MainSurface.Snapshot();
         }
 
         protected virtual void Dispose(bool disposing)
