@@ -1,18 +1,11 @@
 ﻿using BilibiliMonitor.Models;
 using Newtonsoft.Json;
-using SixLabors.Fonts;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Timers;
-using Path = System.IO.Path;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -493,7 +486,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         return false;
                     }
                     Cached.Add((LastDynamicID, DateTime.Now));
-                    return true;
+                    return !Config.DynamicFilters.Any(text.Contains);
                 }
             }
             else
