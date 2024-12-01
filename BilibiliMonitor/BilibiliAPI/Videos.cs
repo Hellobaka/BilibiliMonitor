@@ -4,12 +4,10 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using static BilibiliMonitor.Models.DynamicModel;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -55,8 +53,8 @@ namespace BilibiliMonitor.BilibiliAPI
             float largeFontSize = 20;
             SKColor gray = SKColor.Parse("#6d757a");
             SKColor nameColor = string.IsNullOrEmpty(user.card.vip.nickname_color) ? SKColors.Black : SKColor.Parse(user.card.vip.nickname_color);
-            
-            using Painting main = new (width, height);
+
+            using Painting main = new(width, height);
             string avatarPath = Path.Combine(Config.BaseDirectory, "tmp", video.owner.face.GetFileNameFromURL());
             string coverPath = Path.Combine(Config.BaseDirectory, "tmp", video.pic.GetFileNameFromURL());
             using var avatar = main.LoadImage(avatarPath);
@@ -64,8 +62,8 @@ namespace BilibiliMonitor.BilibiliAPI
 
             float coverResizeHeight = cover.Height / (cover.Width / main.Width);
             main.DrawImage(cover, new SKRect { Right = main.Width, Bottom = coverResizeHeight });
-            main.DrawImage(main.CreateCircularImage(avatar, avatarWidth), new SKRect { Left = 10, Top = coverResizeHeight + 12, Size = new() { Width=avatarWidth, Height=avatarWidth } });
-            
+            main.DrawImage(main.CreateCircularImage(avatar, avatarWidth), new SKRect { Left = 10, Top = coverResizeHeight + 12, Size = new() { Width = avatarWidth, Height = avatarWidth } });
+
             var textArea = new SKRect() { Left = 10, Right = main.Width - 10 };
             var textP = main.DrawRelativeText(video.owner.name, textArea, new SKPoint { X = avatarWidth + 5, Y = coverResizeHeight + 12 }, nameColor, middleFontSize);
             textP = main.DrawRelativeText($"{user.card.fans.ParseNum2Chinese()}粉丝 {user.archive_count.ParseNum2Chinese()}个投稿", textArea, new SKPoint { X = avatarWidth + 5, Y = textP.Y + 7 }, gray, smallFontSize);
@@ -79,7 +77,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using var forward = main.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "forward_video.png"));
 
             float baseY = textP.Y + 10;
-            main.DrawImage(play, new SKRect { Top = baseY, Left = 10, Size = new() { Width = smallIconWidth, Height= smallIconWidth } });
+            main.DrawImage(play, new SKRect { Top = baseY, Left = 10, Size = new() { Width = smallIconWidth, Height = smallIconWidth } });
             textP = main.DrawRelativeText(Helper.ParseLongNumber(video.stat.view), textArea, new SKPoint { X = smallIconWidth + 2, Y = textP.Y + 10 }, gray, smallFontSize);
             main.DrawImage(danmaku, new SKRect { Top = baseY, Left = textP.X + 10, Size = new() { Width = smallIconWidth, Height = smallIconWidth } });
             textP = main.DrawRelativeText(Helper.ParseLongNumber(video.stat.danmaku), textArea, new SKPoint { X = textP.X + smallIconWidth + 2, Y = baseY }, gray, smallFontSize);
@@ -88,7 +86,7 @@ namespace BilibiliMonitor.BilibiliAPI
             baseY = textP.Y + 10;
             textP = main.DrawRelativeText(video.bvid, textArea, new SKPoint { Y = baseY }, gray, smallFontSize);
             textP = main.DrawRelativeText($"AV{video.aid}", textArea, new SKPoint { X = textP.X + 10, Y = baseY }, gray, smallFontSize);
-            
+
             textP = main.DrawRelativeText(video.desc, textArea, new SKPoint { Y = textP.Y + 10 }, gray, smallFontSize);
 
             baseY = textP.Y + 20;
@@ -104,7 +102,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
                 main.DrawRectangle(new SKRect { Left = textP.X + 10, Top = baseY, Size = new() { Width = size.Width + 14, Height = size.Height + 8 } }, SKColor.Parse("#F6F7F8"));
                 textP = main.DrawRelativeText(item.tag_name, textArea, new SKPoint { X = textP.X + 7, Y = baseY + 4 }, gray, smallFontSize);
-                textP = new (textP.X + 7 + 10, baseY);
+                textP = new(textP.X + 7 + 10, baseY);
             }
 
             // 左右Padding80，间隔 = ((Width-padding*2) - (largeIconWidth * 4)) / 3
@@ -117,13 +115,13 @@ namespace BilibiliMonitor.BilibiliAPI
             string text = Helper.ParseLongNumber(video.stat.like);
             size = main.MeasureString(text, smallFontSize);
             textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
-            
+
             imgPoint = new(imgPoint.X + padding + largeIconWidth, imgPoint.Y);
             main.DrawImage(coin, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
             text = Helper.ParseLongNumber(video.stat.coin);
             size = main.MeasureString(text, smallFontSize);
             textP = main.DrawRelativeText(text, textArea, new SKPoint { X = imgPoint.X + (largeIconWidth / 2) - (size.Width / 2) - 10, Y = imgPoint.Y + largeIconWidth + 10 }, gray, smallFontSize);
-            
+
             imgPoint = new(imgPoint.X + padding + largeIconWidth, imgPoint.Y);
             main.DrawImage(favorite, new SKRect { Top = imgPoint.Y, Left = imgPoint.X, Size = new SKSize { Height = largeIconWidth, Width = largeIconWidth } });
             text = Helper.ParseLongNumber(video.stat.favorite);

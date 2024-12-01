@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Timers;
-using static BilibiliMonitor.Models.LiveStreamsModel;
 
 namespace BilibiliMonitor.BilibiliAPI
 {
@@ -136,7 +135,7 @@ namespace BilibiliMonitor.BilibiliAPI
             using var cover = main.LoadImage(coverPath);
             float resizeCoverWidth = (float)(cover.Width / (cover.Height / main.Height));
             main.DrawImage(cover, new SKRect { Bottom = main.Height, Right = resizeCoverWidth });
-            main.DrawImage(main.CreateCircularImage(avatar, avatarSize), new SKRect { Left = resizeCoverWidth + 10, Top = 10, Size = new() { Width = avatarSize, Height= avatarSize } });
+            main.DrawImage(main.CreateCircularImage(avatar, avatarSize), new SKRect { Left = resizeCoverWidth + 10, Top = 10, Size = new() { Width = avatarSize, Height = avatarSize } });
 
             // 从封面 + 10，到右侧边缘 - 10
             SKRect textArea = new() { Left = resizeCoverWidth + 10, Right = main.Width - 10 };

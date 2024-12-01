@@ -126,10 +126,10 @@ namespace BilibiliMonitor.BilibiliAPI
             float largeFontSize = 24;
             SKColor gray = SKColor.Parse("#99a2aa");
 
-            using Painting main = new (width, height);
+            using Painting main = new(width, height);
             string avatarPath = Path.Combine(Config.BaseDirectory, "tmp", UserInfo.info.face.GetFileNameFromURL());
             string coverPath = Path.Combine(Config.BaseDirectory, "tmp", RoomInfo.user_cover.GetFileNameFromURL());
-            
+
             using var avatar = main.LoadImage(avatarPath);
             using var cover = main.LoadImage(coverPath);
             float resizeCoverWidth = (float)(cover.Width / (cover.Height / main.Height));

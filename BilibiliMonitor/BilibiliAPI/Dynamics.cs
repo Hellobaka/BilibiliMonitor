@@ -41,7 +41,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
         public string UserName { get; set; }
 
-        private static string BaseUrl { get; set; } = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
+        private const string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
 
         private static List<Dynamics> CheckItems { get; set; } = [];
 
@@ -213,7 +213,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     foreach (var i in item.modules.module_interaction.items)
                     {
-                        foreach(var j in i?.desc?.rich_text_nodes)
+                        foreach (var j in i?.desc?.rich_text_nodes)
                         {
                             _ = Helper.DownloadFile(j.emoji?.icon_url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
                         }

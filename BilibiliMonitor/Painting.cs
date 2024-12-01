@@ -1,8 +1,6 @@
 ﻿using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 using System;
-using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,8 +9,6 @@ namespace BilibiliMonitor
 {
     public class Painting : IDisposable
     {
-        private bool Disposing { get; set; }
-
         public Painting(int width, int height)
         {
             Width = width;
@@ -25,17 +21,9 @@ namespace BilibiliMonitor
             }
         }
 
-        public float Width {  get; set; }
-
         public float Height { get; set; }
 
-        private SKTypeface CustomFont { get; set; }
-
-        private SKSurface MainSurface {  get; set; }
-
-        private SKCanvas MainCanvas => MainSurface.Canvas;
-
-        private static SKFontManager FontManager { get; set; } = SKFontManager.CreateDefault();
+        public float Width { get; set; }
 
         private static SKPaint AntialiasPaint { get; set; } = new SKPaint
         {
@@ -43,74 +31,15 @@ namespace BilibiliMonitor
             FilterQuality = SKFilterQuality.High,
         };
 
-        /// <summary>
-        /// 在指定位置绘制指定大小的图片
-        /// </summary>
-        /// <param name="imagePath">欲绘制图片的文件路径</param>
-        /// <param name="rect">目标尺寸、大小</param>
-        public void DrawImage(string imagePath, SKRect rect)
-        {
-            if (!File.Exists(imagePath)) 
-            {
-                return;
-            }
-            using var imageStream = File.OpenRead(imagePath);
-            using var codec = SKCodec.Create(imageStream);
-            var bitmap = SKBitmap.Decode(codec);
-            var image = SKImage.FromBitmap(bitmap);
+        private static SKFontManager FontManager { get; set; } = SKFontManager.CreateDefault();
 
-            DrawImage(image, rect);
-        }
+        private SKTypeface CustomFont { get; set; }
 
-        public SKImage LoadImage(string imagePath)
-        {
-            using var imageStream = File.OpenRead(imagePath);
-            using var codec = SKCodec.Create(imageStream);
-            var bitmap = SKBitmap.Decode(codec);
-            return SKImage.FromBitmap(bitmap);
-        }
+        private bool Disposing { get; set; }
 
-        /// <summary>
-        /// 在指定位置绘制指定大小的图片
-        /// </summary>
-        /// <param name="imagePath">欲绘制图片的文件路径</param>
-        /// <param name="rect">目标位置、大小</param>
-        public void DrawImage(SKImage image, SKRect rect)
-        {
-            MainCanvas.DrawImage(image, rect, AntialiasPaint);
-        }
+        private SKCanvas MainCanvas => MainSurface.Canvas;
 
-        public void Resize(int width, int height)
-        {
-            var newSurface = SKSurface.Create(new SKImageInfo(width, height));
-            SKCanvas canvas = newSurface.Canvas;
-            canvas.Clear(SKColors.White);
-
-            MainSurface.Draw(canvas, 0, 0, AntialiasPaint);
-            MainCanvas.Dispose();
-            MainSurface.Dispose();
-
-            Width = width;
-            Height = height;
-
-            MainSurface = newSurface;
-        }
-
-        public void Padding(int top, int left, int right, int bottom, SKColor color)
-        {
-            var newSurface = SKSurface.Create(new SKImageInfo((int)(Width + left + right), (int)(Height + top + bottom)));
-            SKCanvas canvas = newSurface.Canvas;
-            canvas.Clear(color);
-
-            MainSurface.Draw(canvas, top, left, AntialiasPaint);
-            MainCanvas.Dispose();
-            MainSurface.Dispose();
-
-            Width += left + right;
-            Height += top + bottom;
-
-            MainSurface = newSurface;
-        }
+        private SKSurface MainSurface { get; set; }
 
         /// <summary>
         /// 裁切图片为圆形
@@ -147,6 +76,41 @@ namespace BilibiliMonitor
             return CreateCircularImage(LoadImage(imagePath), width);
         }
 
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// 在指定位置绘制指定大小的图片
+        /// </summary>
+        /// <param name="imagePath">欲绘制图片的文件路径</param>
+        /// <param name="rect">目标尺寸、大小</param>
+        public void DrawImage(string imagePath, SKRect rect)
+        {
+            if (!File.Exists(imagePath))
+            {
+                return;
+            }
+            using var imageStream = File.OpenRead(imagePath);
+            using var codec = SKCodec.Create(imageStream);
+            var bitmap = SKBitmap.Decode(codec);
+            var image = SKImage.FromBitmap(bitmap);
+
+            DrawImage(image, rect);
+        }
+
+        /// <summary>
+        /// 在指定位置绘制指定大小的图片
+        /// </summary>
+        /// <param name="imagePath">欲绘制图片的文件路径</param>
+        /// <param name="rect">目标位置、大小</param>
+        public void DrawImage(SKImage image, SKRect rect)
+        {
+            MainCanvas.DrawImage(image, rect, AntialiasPaint);
+        }
+
         public void DrawRectangle(SKRect rect, SKColor fillColor)
         {
             using var paint = new SKPaint
@@ -159,44 +123,9 @@ namespace BilibiliMonitor
             MainCanvas.DrawRect(rect, paint);
         }
 
-        public SKSize MeasureString(string text, float fontSize)
-        {
-            SKTypeface typeface;
-            if (CustomFont != null && CustomFont.ContainsGlyphs(text))
-            {
-                typeface = CustomFont;
-            }
-            else
-            {
-                typeface = FontManager.MatchCharacter(text.First());
-                if (typeface == null)
-                {
-                    return new();
-                }
-            }
-            var paint = new SKPaint
-            {
-                Typeface = typeface,
-                TextSize = fontSize,
-                IsAntialias = true,
-                FilterQuality = SKFilterQuality.High,
-            };
-            var shaper = new SKShaper(typeface);
-            var shapedText = shaper.Shape(text, paint);
-            var metrics = paint.FontMetrics;
-            return new SKSize { Width = shapedText.Width, Height = metrics.Descent - metrics.Ascent };
-        }
-
         /// <summary>
         /// 相对区域坐标绘制
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="area"></param>
-        /// <param name="startPoint"></param>
-        /// <param name="color"></param>
-        /// <param name="fontSize"></param>
-        /// <param name="customFont"></param>
-        /// <returns></returns>
         public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null)
         {
             return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, customFont);
@@ -279,6 +208,74 @@ namespace BilibiliMonitor
             return new SKPoint(currentX, currentY);
         }
 
+        public SKImage LoadImage(string imagePath)
+        {
+            using var imageStream = File.OpenRead(imagePath);
+            using var codec = SKCodec.Create(imageStream);
+            var bitmap = SKBitmap.Decode(codec);
+            return SKImage.FromBitmap(bitmap);
+        }
+
+        public SKSize MeasureString(string text, float fontSize)
+        {
+            SKTypeface typeface;
+            if (CustomFont != null && CustomFont.ContainsGlyphs(text))
+            {
+                typeface = CustomFont;
+            }
+            else
+            {
+                typeface = FontManager.MatchCharacter(text.First());
+                if (typeface == null)
+                {
+                    return new();
+                }
+            }
+            var paint = new SKPaint
+            {
+                Typeface = typeface,
+                TextSize = fontSize,
+                IsAntialias = true,
+                FilterQuality = SKFilterQuality.High,
+            };
+            var shaper = new SKShaper(typeface);
+            var shapedText = shaper.Shape(text, paint);
+            var metrics = paint.FontMetrics;
+            return new SKSize { Width = shapedText.Width, Height = metrics.Descent - metrics.Ascent };
+        }
+
+        public void Padding(int top, int left, int right, int bottom, SKColor color)
+        {
+            var newSurface = SKSurface.Create(new SKImageInfo((int)(Width + left + right), (int)(Height + top + bottom)));
+            SKCanvas canvas = newSurface.Canvas;
+            canvas.Clear(color);
+
+            MainSurface.Draw(canvas, top, left, AntialiasPaint);
+            MainCanvas.Dispose();
+            MainSurface.Dispose();
+
+            Width += left + right;
+            Height += top + bottom;
+
+            MainSurface = newSurface;
+        }
+
+        public void Resize(int width, int height)
+        {
+            var newSurface = SKSurface.Create(new SKImageInfo(width, height));
+            SKCanvas canvas = newSurface.Canvas;
+            canvas.Clear(SKColors.White);
+
+            MainSurface.Draw(canvas, 0, 0, AntialiasPaint);
+            MainCanvas.Dispose();
+            MainSurface.Dispose();
+
+            Width = width;
+            Height = height;
+
+            MainSurface = newSurface;
+        }
+
         public void Save(string path)
         {
             using var image = MainSurface.Snapshot();
@@ -297,12 +294,6 @@ namespace BilibiliMonitor
                 }
                 Disposing = true;
             }
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }
