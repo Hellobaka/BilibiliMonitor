@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using SixLabors.ImageSharp;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -32,16 +31,6 @@ namespace BilibiliMonitor
                 }
             }
             return false;
-        }
-
-        public static Point Copy(this Point p)
-        {
-            return new Point(p.X, p.Y);
-        }
-
-        public static PointF Copy(this PointF p)
-        {
-            return new PointF(p.X, p.Y);
         }
 
         /// <summary>
