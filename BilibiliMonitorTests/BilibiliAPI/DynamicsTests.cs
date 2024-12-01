@@ -14,11 +14,17 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void FetchDynamicListTest()
         {
-            Dynamics dy = new(433351);
+            Config config = new("Config.json");
+            config.LoadConfig();
+
+            Dynamics dy = new(25876945);
             dy.FetchDynamicList();
-            dy.DownloadPics();
-            dy.DrawImage();
-            Console.WriteLine(dy.LastDynamicID);
+            for (int i = 0; i < 10; i++)
+            {
+                var item = dy.DynamicList[i];
+                dy.DownloadPics(item);
+                Console.WriteLine(dy.DrawImage(item));
+            }
         }
     }
 }
