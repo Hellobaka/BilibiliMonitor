@@ -308,9 +308,9 @@ namespace BilibiliMonitor.BilibiliAPI
                     LogHelper.Info("颜色异常", $"color: {item.modules.module_author.vip.nickname_color}", false);
                 }
             }
-            var textP = main.DrawText(item.modules.module_author.name, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = 14 }, nameColor, 16);
+            var textP = main.DrawText(item.modules.module_author.name, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = 20 }, nameColor, 16);
             string text = $"{Helper.TimeStamp2DateTime(item.modules.module_author.pub_ts):G}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
-            textP = main.DrawText(text, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = textP.Y + 10 }, new SKColor(153, 162, 170), 14);
+            textP = main.DrawText(text, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = textP.Y + 7 }, new SKColor(153, 162, 170), 14);
 
             //装扮
             if (item.modules.module_author.decorate != null)
@@ -645,12 +645,22 @@ namespace BilibiliMonitor.BilibiliAPI
                     height = (int)(image.Height * (imgMaxWidth / (float)image.Width));
                 }
                 img.DrawImage(image, new SKRect { Location = point, Size = new(width, height) });
+                if (i.src.EndsWith(".gif"))
+                {
+                    int paddingLeft = 4;
+                    int paddingTop = 2;
+                    var textSize = img.MeasureString("动图", 14);
+                    var textPoint = new SKPoint(point.X + width - 10 - textSize.Width - paddingLeft, point.Y + height - 10 - textSize.Height);
+                    img.DrawRectangle(new SKRect { Location = new(textPoint.X - paddingLeft, textPoint.Y - paddingTop), Size = new(textSize.Width + paddingLeft * 2, textSize.Height + paddingTop * 2) }, new SKColor(0, 0, 0, 0xBB), SKColors.Black, 0);
+                    img.DrawText("动图", Painting.Anywhere, textPoint, SKColors.White, 14);
+                }
                 point = new(startX, point.Y + height + 10);
             }
             else
             {
                 imgMaxWidth = picCount == 4 ? 480 : 360;
                 imgMaxWidth -= padding * 2;
+                bool newLine = false;
                 for (int index = 1; index <= picCount; index++)
                 {
                     var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
@@ -689,17 +699,31 @@ namespace BilibiliMonitor.BilibiliAPI
                         image = frame.SnapShot();
                     }
                     img.DrawImage(image, new SKRect { Location = point, Size = new(imgMaxWidth, imgMaxWidth) });
+                    if (item.items[index - 1].src.EndsWith(".gif"))
+                    {
+                        int paddingLeft = 4;
+                        int paddingTop = 2;
+                        var textSize = img.MeasureString("动图", 14);
+                        var textPoint = new SKPoint(point.X + imgMaxWidth - 10 - textSize.Width - paddingLeft, point.Y + imgMaxWidth - 10 - textSize.Height);
+                        img.DrawRectangle(new SKRect { Location = new(textPoint.X - paddingLeft, textPoint.Y - paddingTop), Size = new(textSize.Width + paddingLeft * 2, textSize.Height + paddingTop * 2) }, new SKColor(0, 0, 0, 0xBB), SKColors.Black, 0);
+                        img.DrawText("动图", Painting.Anywhere, textPoint, SKColors.White, 14);
+                    }
                     image.Dispose();
                     if (picCount == 4)
                     {
+                        newLine = index % 2 == 0;
                         point = index % 2 == 0 ? new(startX, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
                     }
                     else
                     {
+                        newLine = index % 3 == 0;
                         point = index % 3 == 0 ? new(startX, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
                     }
                 }
-                // point = new SKPoint(initalPoint.X, point.Y + imgMaxWidth + 10);
+                if (!newLine)
+                {
+                    point = new SKPoint(initalPoint.X, point.Y + imgMaxWidth + 10);
+                }
             }
         }
 
@@ -747,8 +771,8 @@ namespace BilibiliMonitor.BilibiliAPI
             img.DrawRectangle(new(point.X, point.Y, elementWidth, point.Y + imgHeight), SKColors.White, new(229, 233, 239), 1);
             img.DrawImage(cover, new() { Location = point, Size = new(imgWidth, imgHeight) });
 
-            int titleFontSize = 16;
-            int bodyFontSize = 14;
+            int titleFontSize = 14;
+            int bodyFontSize = 12;
 
             if (item.badge != null && !string.IsNullOrEmpty(item.badge.text))
             {
@@ -756,14 +780,14 @@ namespace BilibiliMonitor.BilibiliAPI
                 int paddingLeft = 5, paddingTop = 2;
                 img.DrawRectangle(new SKRect() { Left = initialPoint.X + imgWidth - size.Width - 10 - paddingLeft * 2, Top = point.Y + 8, Size = new(size.Width + paddingLeft * 2, size.Height + paddingTop * 2) }, SKColor.Parse(item.badge.bg_color), SKColors.Black, 0);
 
-                img.DrawText(item.badge.text, Painting.Anywhere, new(initialPoint.X + imgWidth - size.Width - 10 - paddingLeft, point.Y + 8 + paddingTop), SKColors.White, 12);
+                img.DrawText(item.badge.text, Painting.Anywhere, new(initialPoint.X + imgWidth - size.Width - 10 - paddingLeft, point.Y + 8 + paddingTop), SKColors.White, 12, isBold: true);
             }
 
-            point = new(0, initialPoint.Y + 5);
-            point = img.DrawRelativeText(item.title, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, titleFontSize, isBold: true);
+            point = new(0, initialPoint.Y + 10);
+            point = img.DrawRelativeText(item.title, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, titleFontSize);
             point = new(0, point.Y + 10);
 
-            point = img.DrawRelativeText(item.desc, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, new SKColor(102, 102, 102), bodyFontSize);
+            point = img.DrawRelativeText(item.desc.Replace("\n", " ").Replace("\r", ""), new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, new SKColor(102, 102, 102), bodyFontSize);
             point = new(initialPoint.X + imgWidth + 10, point.Y - bodyFontSize);
 
             // stat
