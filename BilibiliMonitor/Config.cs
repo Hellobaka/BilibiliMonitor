@@ -37,13 +37,16 @@ namespace BilibiliMonitor
 
         public static string CustomFont { get; set; } = "";
 
+        public static string CustomFontPath { get; set; } = "";
+
         public static List<string> DynamicFilters { get; set; } = [];
 
         public override void LoadConfig()
         {
             Cookies = GetConfig("Cookies", "");
             RefreshToken = GetConfig("RefreshToken", "");
-            CustomFont = GetConfig("CustomFont", "");
+            CustomFont = GetConfig("CustomFont", "微软雅黑");
+            CustomFontPath = GetConfig("CustomFontPath", "");
             RefreshInterval = GetConfig("RefreshInterval", 120 * 1000);
             BangumiRetryCount = GetConfig("BangumiRetryCount", 3);
             LiveStreamRetryCount = GetConfig("LiveStreamRetryCount", 3);
