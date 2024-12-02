@@ -45,7 +45,7 @@ namespace BilibiliMonitor
         {
             Cookies = GetConfig("Cookies", "");
             RefreshToken = GetConfig("RefreshToken", "");
-            CustomFont = GetConfig("CustomFont", "微软雅黑");
+            CustomFont = GetConfig("CustomFont", "Microsoft YaHei");
             CustomFontPath = GetConfig("CustomFontPath", "");
             RefreshInterval = GetConfig("RefreshInterval", 120 * 1000);
             BangumiRetryCount = GetConfig("BangumiRetryCount", 3);
