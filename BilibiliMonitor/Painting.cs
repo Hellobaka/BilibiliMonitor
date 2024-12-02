@@ -15,10 +15,24 @@ namespace BilibiliMonitor
             Height = height;
             MainSurface = SKSurface.Create(new SKImageInfo(width, height));
             MainCanvas.Clear(SKColors.White);
+
+            CustomFont = CreateCustomFont();
+        }
+
+        private static SKTypeface CreateCustomFont()
+        {            
+            // 路径 > 名称
+            if (!string.IsNullOrEmpty(Config.CustomFontPath))
+            {
+                // 自定义路径不支持粗体
+                return SKTypeface.FromFile(Config.CustomFontPath);
+            }
+
             if (!string.IsNullOrEmpty(Config.CustomFont))
             {
-                CustomFont = SKTypeface.FromFile(Config.CustomFont);
+                return SKTypeface.FromFamilyName(Config.CustomFont) ?? SKTypeface.Default;
             }
+            return SKTypeface.Default;
         }
 
         public static SKRect Anywhere { get; set; } = new SKRect { Right = int.MaxValue, Bottom = int.MaxValue };
@@ -172,6 +186,18 @@ namespace BilibiliMonitor
             float currentX = startPoint.X;
             float currentY = startPoint.Y + fontSize;
             float lineHeight = fontSize;
+
+            SKTypeface GetTypeface(SKTypeface baseFont, bool bold)
+            {
+                if (baseFont != null && baseFont.IsBold == bold)
+                {
+                    return baseFont;
+                }
+                return SKTypeface.FromFamilyName(baseFont.FamilyName, bold ? SKFontStyle.Bold : SKFontStyle.Normal);
+            }
+
+            SKTypeface typeface = CustomFont != null ? GetTypeface(CustomFont, isBold) : null;
+
             while (textElementEnumerator.MoveNext())
             {
                 string textElement = textElementEnumerator.GetTextElement();
@@ -185,16 +211,11 @@ namespace BilibiliMonitor
                 enumerator.MoveNext();
                 int codepoint = char.ConvertToUtf32(textElement, enumerator.ElementIndex);
 
-                SKTypeface typeface;
                 if (customFont != null && customFont.ContainsGlyph(codepoint))
                 {
                     typeface = customFont;
                 }
-                else if (CustomFont != null && CustomFont.ContainsGlyph(codepoint))
-                {
-                    typeface = CustomFont;
-                }
-                else
+                else if (typeface == null || !typeface.ContainsGlyph(codepoint))
                 {
                     typeface = FontManager.MatchCharacter(codepoint);
                     if (typeface == null)
