@@ -310,7 +310,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             var textP = main.DrawText(item.modules.module_author.name, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = 14 }, nameColor, 16);
             string text = $"{Helper.TimeStamp2DateTime(item.modules.module_author.pub_ts):G}{(string.IsNullOrWhiteSpace(item.modules.module_author.pub_action) ? "" : " · ")}{item.modules.module_author.pub_action}";
-            textP = main.DrawText(text, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = textP.Y + 3 }, new SKColor(153, 162, 170), 16);
+            textP = main.DrawText(text, Painting.Anywhere, new SKPoint() { X = 14 + avatarSize + 10, Y = textP.Y + 10 }, new SKColor(153, 162, 170), 14);
 
             //装扮
             if (item.modules.module_author.decorate != null)
@@ -358,7 +358,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
                 case "DYNAMIC_TYPE_ARTICLE":
                     point = new(padding, point.Y + 10);
-                    DrawArticle(item.modules.module_dynamic.major.article, ref main, ref point);
+                    DrawArticle(item.modules.module_dynamic.major.article, ref main, ref point, (int)(main.Width - padding * 2));
                     break;
             }
 
@@ -516,7 +516,7 @@ namespace BilibiliMonitor.BilibiliAPI
             Updating = false;
         }
 
-        private void DrawArticle(DynamicModel.Article item, ref Painting img, ref SKPoint point, int elementWidth = 520)
+        private void DrawArticle(DynamicModel.Article item, ref Painting img, ref SKPoint point, int elementWidth = 100)
         {
             var initPoint = new SKPoint(point.X, point.Y);
             using var cover = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.covers[0].GetFileNameFromURL()));
@@ -525,27 +525,12 @@ namespace BilibiliMonitor.BilibiliAPI
             img.DrawImage(cover, new SKRect { Location = point, Size = new SKSize { Width = elementWidth, Height = imgHeight } });
 
             point = new(point.X + 16, point.Y + imgHeight + 5);
+            point = img.DrawRelativeText(item.title, new SKRect { Left = point.X, Right = point.X + elementWidth - 16, Bottom = initPoint.Y + imgHeight - 10 }, point, SKColors.Black, 16, isBold: true);
+            point.Y += 16 + 5;     
 
-            if (item.title.Length > 50)
-            {
-                item.title = item.title.Substring(0, 48) + "..";
-            }
-            point = img.DrawText(item.title, new SKRect { Left = point.X, Right = point.X + elementWidth - 16 }, point, SKColors.Black, 16);
+            point = img.DrawRelativeText(item.desc, new SKRect { Left = point.X, Right = point.X + elementWidth - 16, Bottom = initPoint.Y + imgHeight - 10 }, point, new SKColor(102, 102, 102), 14);
 
-            if (item.desc.Length > 74)
-            {
-                item.desc = item.desc.Substring(0, 74) + "..";
-            }
-
-            if (item.desc.Count(x => x == '\n') >= 2)
-            {
-                int first = item.desc.IndexOf('\n');
-                item.desc = item.desc.Substring(0, item.desc.IndexOf('\n', first + 1)) + "..";
-            }
-            point = new SKPoint(initPoint.X, point.Y + 5);
-            point = img.DrawText(item.desc, new SKRect { Left = point.X, Right = point.X + elementWidth - 16 }, point, new SKColor(102, 102, 102), 14);
-
-            point = new SKPoint(point.X, point.Y + 5);
+            point = new SKPoint(initPoint.X, initPoint.Y + imgHeight + 5);
         }
 
         /// <summary>
@@ -603,9 +588,9 @@ namespace BilibiliMonitor.BilibiliAPI
                 return;
             }
             int padding = 10;
-            int fontSize = 16;
+            int fontSize = 14;
             SKPoint initalPoint = new(point.X, point.Y);
-            point = new(point.X + padding, point.Y + 2);
+            point = new(point.X + padding, point.Y + 10);
 
             using var comment = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
             img.DrawImage(comment, new SKRect { Location = point, Size = new SKSize(18, 18) });
@@ -616,7 +601,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     case "RICH_TEXT_NODE_TYPE_TEXT":
                     case "RICH_TEXT_NODE_TYPE_AT":
-                        point = img.DrawText(node.text.Replace("\r", " ").Replace("\n", " "), new SKRect { Left = initalPoint.X, Right = CanvasWidth - padding }, point, SKColor.Parse("#6d757a"), fontSize);
+                        point = img.DrawText(node.text.Replace("\r", " ").Replace("\n", " "), new SKRect { Left = initalPoint.X + padding + 16 + 8, Right = CanvasWidth - padding }, point, SKColor.Parse("#6d757a"), fontSize);
                         point = new SKPoint(point.X, point.Y - fontSize);
 
                         break;
@@ -633,7 +618,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         break;
                 }
             }
-            img.DrawRectangle(new SKRect { Location = initalPoint, Size = new(2, fontSize + 6) }, SKColor.Parse("#e7e7e7"), SKColors.Black, 0);
+            img.DrawRectangle(new SKRect { Location = new(initalPoint.X , initalPoint.Y + 8), Size = new(2, fontSize + 6) }, SKColor.Parse("#e7e7e7"), SKColors.Black, 0);
 
             point = new(initalPoint.X, point.Y + 10);
         }
@@ -727,8 +712,8 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 return;
             }
-            int iconSize = 16;
-            int fontSize = 16;
+            int iconSize = 12;
+            int fontSize = 12;
             SKPoint initalPoint = new(point.X, point.Y);
             point = new(point.X, point.Y + 20);
             using var forward = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "forward.png"));
@@ -762,8 +747,8 @@ namespace BilibiliMonitor.BilibiliAPI
             img.DrawRectangle(new(point.X, point.Y, elementWidth, point.Y + imgHeight), SKColors.White, new(229, 233, 239), 1);
             img.DrawImage(cover, new() { Location = point, Size = new(imgWidth, imgHeight) });
 
-            int titleFontSize = 20;
-            int bodyFontSize = 16;
+            int titleFontSize = 16;
+            int bodyFontSize = 14;
 
             if (item.badge != null && !string.IsNullOrEmpty(item.badge.text))
             {
@@ -775,10 +760,10 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             point = new(0, initialPoint.Y + 5);
-            point = img.DrawRelativeText(item.title, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, titleFontSize);
+            point = img.DrawRelativeText(item.title, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, titleFontSize, isBold: true);
             point = new(0, point.Y + 10);
 
-            point = img.DrawRelativeText(item.desc, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, SKColors.Black, bodyFontSize);
+            point = img.DrawRelativeText(item.desc, new SKRect { Left = initialPoint.X + imgWidth + 10, Right = elementWidth - 10, Bottom = initialPoint.Y + imgHeight - 25 }, point, new SKColor(102, 102, 102), bodyFontSize);
             point = new(initialPoint.X + imgWidth + 10, point.Y - bodyFontSize);
 
             // stat
@@ -808,14 +793,14 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 return;
             }
-            int bodyFontSize = 18;
+            int bodyFontSize = 16;
             if (item.modules.module_dynamic.topic != null)
             {
                 using var topic = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
-                img.DrawImage(topic, new SKRect { Location = initalPoint, Size = new() { Width = 18, Height = 18 } });
-                point = new(point.X + 22, point.Y);
+                img.DrawImage(topic, new SKRect { Location = initalPoint, Size = new() { Width = bodyFontSize, Height = bodyFontSize } });
+                point = new(point.X + bodyFontSize + 4, point.Y - 3);
                 img.DrawText(item.modules.module_dynamic.topic.name, Painting.Anywhere, point, new SKColor(0, 138, 197), bodyFontSize);
-                point = new(initalPoint.X, point.Y + 20);
+                point = new(initalPoint.X, point.Y + bodyFontSize + 3 + 3);
             }
 
             if (item.modules.module_dynamic.desc == null)
@@ -835,17 +820,17 @@ namespace BilibiliMonitor.BilibiliAPI
                     case "RICH_TEXT_NODE_TYPE_EMOJI":
                         using (var emoji = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), node.emoji.icon_url.GetFileNameFromURL())))
                         {
-                            img.DrawImage(emoji, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 20, Height = 20 } });
+                            img.DrawImage(emoji, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = bodyFontSize + 2, Height = bodyFontSize + 2 } });
                         }
-                        point = new(point.X + 20, point.Y);
+                        point = new(point.X + bodyFontSize + 2, point.Y);
                         break;
 
                     case "RICH_TEXT_NODE_TYPE_LOTTERY":
                         using (var gift = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "gift.png")))
                         {
-                            img.DrawImage(gift, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 18, Height = 18 } });
+                            img.DrawImage(gift, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = bodyFontSize + 2, Height = bodyFontSize + 2 } });
                         }
-                        point = new(point.X + 22, point.Y);
+                        point = new(point.X + bodyFontSize + 4, point.Y);
                         point = img.DrawText("互动抽奖", Painting.Anywhere, point, new SKColor(23, 139, 207), bodyFontSize);
                         point.Y -= bodyFontSize;
 
@@ -854,9 +839,9 @@ namespace BilibiliMonitor.BilibiliAPI
                     case "RICH_TEXT_NODE_TYPE_WEB":
                         using (var url = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "url.png")))
                         {
-                            img.DrawImage(url, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = 18, Height = 18 } });
+                            img.DrawImage(url, new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = bodyFontSize + 2, Height = bodyFontSize + 2 } });
                         }
-                        point = new(point.X + 22, point.Y);
+                        point = new(point.X + bodyFontSize + 4, point.Y);
                         point = img.DrawText("跳转网址", Painting.Anywhere, point, new SKColor(23, 139, 207), bodyFontSize);
                         point.Y -= bodyFontSize;
 
@@ -874,7 +859,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
             }
 
-            point = new(initalPoint.X, point.Y + 20);
+            point = new(initalPoint.X, point.Y + bodyFontSize + 3);
         }
     }
 }
