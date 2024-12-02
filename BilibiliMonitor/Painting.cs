@@ -231,6 +231,8 @@ namespace BilibiliMonitor
                     Color = color,
                     IsAntialias = true,
                     FilterQuality = SKFilterQuality.High,
+                    SubpixelText = true,
+                    LcdRenderText = true,
                 };
 
                 var shaper = new SKShaper(typeface);
