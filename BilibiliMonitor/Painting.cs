@@ -165,9 +165,9 @@ namespace BilibiliMonitor
         /// <summary>
         /// 相对区域坐标绘制
         /// </summary>
-        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null, bool isBold = false)
+        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, float lineGap = 12, SKTypeface customFont = null, bool isBold = false)
         {
-            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, customFont, isBold);
+            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, lineGap, customFont, isBold);
         }
 
         /// <summary>
@@ -180,12 +180,12 @@ namespace BilibiliMonitor
         /// <param name="customFont">自定义字体</param>
         /// <param name="fontSize">字体大小</param>
         /// <returns>最后一个字符的右下角坐标</returns>
-        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 24, SKTypeface customFont = null, bool isBold = false)
+        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, float lineGap = 12, SKTypeface customFont = null, bool isBold = false)
         {
             var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
             float currentX = startPoint.X;
             float currentY = startPoint.Y + fontSize;
-            float lineHeight = fontSize;
+            float lineHeight = fontSize + lineGap;
 
             SKTypeface GetTypeface(SKTypeface baseFont, bool bold)
             {
@@ -201,10 +201,10 @@ namespace BilibiliMonitor
             while (textElementEnumerator.MoveNext())
             {
                 string textElement = textElementEnumerator.GetTextElement();
-                if (textElement.Contains("\n") || textElement.Contains("\r"))
+                if (textElement.Contains("\n"))
                 {
                     currentX = area.Left;
-                    currentY += fontSize + 3;
+                    currentY += lineHeight;
                     continue;
                 }
                 var enumerator = StringInfo.GetTextElementEnumerator(textElement);
@@ -238,10 +238,6 @@ namespace BilibiliMonitor
                 var shaper = new SKShaper(typeface);
 
                 var shapedText = shaper.Shape(textElement, paint);
-
-                // 获取字体度量信息来计算行高
-                var metrics = paint.FontMetrics;
-                lineHeight = metrics.Descent - metrics.Ascent;
 
                 if (currentX + shapedText.Width > area.Right)
                 {
