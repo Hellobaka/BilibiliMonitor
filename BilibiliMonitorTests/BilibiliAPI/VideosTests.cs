@@ -14,8 +14,7 @@ namespace BilibiliMonitor.BilibiliAPI.Tests
         [TestMethod()]
         public void ParseURLTest()
         {
-            Config.CustomFont = "Lolita.ttf";
-            string url = @"https://www.bilibili.com/video/BV1nNzzYnEQY?p=1&t=1";
+            string url = @"https://www.bilibili.com/video/BV1t7zhYgE7u/";
             string id = Videos.ParseURL(url);
             Console.WriteLine(id);
             Assert.IsTrue(!string.IsNullOrEmpty(id));
