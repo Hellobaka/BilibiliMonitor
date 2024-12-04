@@ -153,11 +153,9 @@ namespace BilibiliMonitor
             LogHelper.Info("GetCorrespondPath", $"timestamp={timestamp}");
 
             using RSA rsa = RSA.Create();
-            var header = PublicKey.IndexOf("-----BEGIN RSA PUBLIC KEY-----");
-            var footer = PublicKey.IndexOf("-----END RSA PUBLIC KEY-----");
             try
             {
-                using var stringReader = new System.IO.StringReader(PublicKey);
+                using var stringReader = new StringReader(PublicKey);
                 var pemReader = new PemReader(stringReader);
                 rsa.ImportParameters(DotNetUtilities.ToRSAParameters((RsaKeyParameters)pemReader.ReadObject()));
                 byte[] encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes($"refresh_{timestamp}"), RSAEncryptionPadding.OaepSHA256);
