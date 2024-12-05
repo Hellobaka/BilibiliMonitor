@@ -111,7 +111,7 @@ namespace BilibiliMonitor
             StringBuilder stringBuilder = new();
             foreach (var item in dict)
             {
-                stringBuilder.Append($"{item.Key}={item.Value};");
+                stringBuilder.Append($"{item.Key}={item.Value}; ");
             }
             return stringBuilder.ToString();
         }
@@ -152,7 +152,7 @@ namespace BilibiliMonitor
         {
             LogHelper.Info("GetCorrespondPath", $"timestamp={timestamp}");
 
-            using RSA rsa = RSA.Create();
+            using RSA rsa = new RSACng();
             try
             {
                 using var stringReader = new StringReader(PublicKey);
@@ -175,16 +175,15 @@ namespace BilibiliMonitor
 
             token = null;
             string url = $"https://www.bilibili.com/correspond/1/{correspondPath}";
-            using HttpClient httpClient = new();
             try
             {
-                httpClient.DefaultRequestHeaders.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
-                httpClient.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0");
-                httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip");
-                var getTask = httpClient.GetAsync(url);
-                getTask.Wait();
-                getTask.Result.EnsureSuccessStatusCode();
-                using GZipStream gzipStream = new(getTask.Result.Content.ReadAsStreamAsync().Result, CompressionMode.Decompress);
+                using WebClient webClient = new();
+                webClient.Headers.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
+                webClient.Headers.Add("Accept-Encoding", "gzip");
+                var download = webClient.DownloadData(url);
+
+                using MemoryStream stream = new(download);
+                using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
                 using StreamReader reader = new(gzipStream, Encoding.UTF8);
                 string html = reader.ReadToEnd();
 
