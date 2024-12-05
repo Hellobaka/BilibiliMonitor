@@ -165,9 +165,9 @@ namespace BilibiliMonitor
         /// <summary>
         /// 相对区域坐标绘制
         /// </summary>
-        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, float lineGap = 12, SKTypeface customFont = null, bool isBold = false)
+        public SKPoint DrawRelativeText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, SKTypeface customFont = null, bool isBold = false)
         {
-            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize, lineGap, customFont, isBold);
+            return DrawText(text, area, new SKPoint { X = startPoint.X + area.Left, Y = startPoint.Y + area.Top }, color, fontSize,  customFont, isBold);
         }
 
         /// <summary>
@@ -180,11 +180,12 @@ namespace BilibiliMonitor
         /// <param name="customFont">自定义字体</param>
         /// <param name="fontSize">字体大小</param>
         /// <returns>最后一个字符的右下角坐标</returns>
-        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, float lineGap = 12, SKTypeface customFont = null, bool isBold = false)
+        public SKPoint DrawText(string text, SKRect area, SKPoint startPoint, SKColor color, float fontSize = 26, SKTypeface customFont = null, bool isBold = false)
         {
             var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
             float currentX = startPoint.X;
             float currentY = startPoint.Y + fontSize;
+            float lineGap = fontSize / 2;
             float lineHeight = fontSize + lineGap;
 
             SKTypeface GetTypeface(SKTypeface baseFont, bool bold)
