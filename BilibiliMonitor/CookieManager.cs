@@ -62,7 +62,15 @@ namespace BilibiliMonitor
             foreach (var item in cookie.Split([';'], StringSplitOptions.RemoveEmptyEntries))
             {
                 var c = item.Split('=');
-                CurrentCookieDict.Add(c.First().Trim(), c.Last().Trim());
+                string key = c.First().Trim();
+                if (CurrentCookieDict.ContainsKey(key))
+                {
+                    CurrentCookieDict[key] = c.Last().Trim();
+                }
+                else
+                {
+                    CurrentCookieDict.Add(c.First().Trim(), c.Last().Trim());
+                }
             }
             CurrentRefresh_csrf = CurrentCookieDict["bili_jct"];
 
@@ -229,7 +237,7 @@ namespace BilibiliMonitor
                 int code = ((int)j["code"]);
                 if (code != 0)
                 {
-                    throw new WebException($"Request Error, code = {code}");
+                    throw new WebException($"Request Error, code = {code}, msg = {j["message"]}");
                 }
                 refreshToken = j["data"]["refresh_token"].ToString();
                 LogHelper.Info("RefreshCookie", $"Update RefreshToken={refreshToken}", false);
