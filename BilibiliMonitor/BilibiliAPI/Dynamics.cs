@@ -199,8 +199,6 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
 
                 int picCount = item.modules.module_dynamic.major?.draw?.items.Length ?? 0;
-                int minWidth = int.MaxValue;
-                int minHeight = int.MaxValue;
                 foreach (var i in item.modules.module_dynamic.major?.draw?.items ?? [])
                 {
                     // 2图时，每图至少480px
@@ -208,8 +206,6 @@ namespace BilibiliMonitor.BilibiliAPI
                     // 最小图片依照最大图片的尺寸, 缩放至原本大小, 后放置在容器中心
                     // 1图时, 图片最大1000px, 容器随图片尺寸变化, 有最小宽度限制
                     _ = Helper.DownloadFile(i.src, Path.Combine(Config.BaseDirectory, "tmp")).Result;
-                    minWidth = Math.Min(i.width, minWidth);
-                    minHeight = Math.Min(i.height, minHeight);
                 }
                 if (picCount <= 0)
                 {
