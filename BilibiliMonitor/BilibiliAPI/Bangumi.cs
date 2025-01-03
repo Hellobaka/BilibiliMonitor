@@ -61,6 +61,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             Bangumi ban = new(seasonId);
+            ban.FetchEPDetail();
             if (string.IsNullOrWhiteSpace(ban.Name))
             {
                 return null;
