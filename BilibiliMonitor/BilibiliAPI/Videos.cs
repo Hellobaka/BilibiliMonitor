@@ -260,7 +260,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                Debug.WriteLine(json.message);
+                LogHelper.Info("拉取用户信息失败", $"id={mid}, msg={json.message}");
             }
             return null;
         }
@@ -268,7 +268,7 @@ namespace BilibiliMonitor.BilibiliAPI
         private static VideoModel.Data GetVideoInfo(string bvId)
         {
             string url = string.Format(BaseVideoURL, "bvid=" + bvId);
-            if (long.TryParse(bvId, out long aid))
+            if (long.TryParse(bvId.ToLower().Replace("av", ""), out long aid))
             {
                 url = string.Format(BaseVideoURL, "aid=" + aid);
             }
@@ -280,7 +280,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                Debug.WriteLine(json.message);
+                LogHelper.Info("拉取视频信息失败", $"id={url.Split('?').Last()}, msg={json.message}");
             }
             return null;
         }
@@ -296,7 +296,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                Debug.WriteLine(json.message);
+                LogHelper.Info("拉取视频Tag失败", $"id={bvid}, msg={json.message}");
             }
             return null;
         }
