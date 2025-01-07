@@ -19,8 +19,6 @@ namespace BilibiliMonitor.BilibiliAPI
 
         private const string BaseVideoURL = "http://api.bilibili.com/x/web-interface/view?{0}";
 
-        private static Dictionary<string, string> ShortURLCache { get; set; } = [];
-
         public static string DrawVideoPic(string id)
         {
             var video = GetVideoInfo(id);
@@ -183,19 +181,10 @@ namespace BilibiliMonitor.BilibiliAPI
                     url = "https://" + url;
                 }
 
-                if (ShortURLCache.ContainsKey(url))
-                {
-                    return ShortURLCache[url];
-                }
-
                 using var http = new HttpClient();
                 var r = http.GetAsync(url);
                 r.Wait();
                 string bvid = r.Result.RequestMessage.RequestUri.AbsoluteUri;
-                if (!ShortURLCache.ContainsKey(url))
-                {
-                    ShortURLCache.Add(url, bvid);
-                }
 
                 url = bvid;
             }
@@ -226,11 +215,6 @@ namespace BilibiliMonitor.BilibiliAPI
                 if (string.IsNullOrEmpty(res))
                 {
                     return string.Empty;
-                }
-
-                if (!ShortURLCache.ContainsKey(match.Groups[1].Value))
-                {
-                    ShortURLCache.Add(match.Groups[1].Value, res);
                 }
 
                 return res;
@@ -280,7 +264,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             else
             {
-                LogHelper.Info("拉取视频信息失败", $"id={url.Split('?').Last()}, msg={json.message}");
+                LogHelper.Info("拉取视频信息失败", $"id={bvId}, msg={json.message}");
             }
             return null;
         }
