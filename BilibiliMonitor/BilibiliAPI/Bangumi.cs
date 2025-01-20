@@ -174,7 +174,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
                 return false;
             }
-            if (json.code == 0)
+            if (json != null && json.code == 0)
             {
                 if (Config.DebugMode)
                 {
