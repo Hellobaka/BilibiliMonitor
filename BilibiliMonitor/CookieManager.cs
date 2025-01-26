@@ -28,7 +28,7 @@ namespace BilibiliMonitor
 
         private static Dictionary<string, string> CurrentCookieDict { get; set; } = [];
 
-        private static string CurrentRefresh_csrf { get; set; } = "";
+        private static string CurrentRefresh_csrf => CurrentCookieDict.TryGetValue("bili_jct", out string v) ? v : "";
 
         private static string CurrentRefreshToken { get; set; } = "";
 
@@ -72,7 +72,6 @@ namespace BilibiliMonitor
                     CurrentCookieDict.Add(c.First().Trim(), c.Last().Trim());
                 }
             }
-            CurrentRefresh_csrf = CurrentCookieDict["bili_jct"];
 
             Config.Cookies = cookie;
             Config.RefreshToken = refreshToken;
