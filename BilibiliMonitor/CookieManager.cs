@@ -216,7 +216,7 @@ namespace BilibiliMonitor
 
         private static bool RefreshCookie(string token, out string refreshToken)
         {
-            LogHelper.Info("RefreshCookie", $"token={token}");
+            LogHelper.Info("RefreshCookie", $"token={token},csrf={CurrentRefresh_csrf}");
             string url = "https://passport.bilibili.com/x/passport-login/web/cookie/refresh";
             using WebClient webClient = new();
             webClient.Headers.Add("Cookie", BuildCookieFromDict(CurrentCookieDict));
@@ -256,7 +256,8 @@ namespace BilibiliMonitor
                             {
                                 continue;
                             }
-                            else if (CurrentCookieDict.ContainsKey(key))
+
+                            if (!string.IsNullOrEmpty(key))
                             {
                                 CurrentCookieDict[key] = value;
                                 LogHelper.Info("RefreshCookie", $"UpdateCookie, {key}={value}");
