@@ -12,7 +12,7 @@ namespace BilibiliMonitor.BilibiliAPI
 {
     public class Dynamics
     {
-        private const string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}";
+        private const string BaseUrl = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={0}&features=itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,forwardListHidden,decorationCard,commentsNewVersion,onlyfansAssetsV2,ugcDelete,onlyfansQaCard";
 
         public Dynamics(long uid)
         {
@@ -166,27 +166,41 @@ namespace BilibiliMonitor.BilibiliAPI
 
             try
             {
+                // 头像
                 _ = Helper.DownloadFile(item.modules.module_author.face, Path.Combine(Config.BaseDirectory, "tmp"))
                     .Result;
+                // 视频投稿封面
                 if (item.modules.module_dynamic.major?.archive != null)
                 {
                     _ = Helper.DownloadFile(item.modules.module_dynamic.major.archive.cover,
                         Path.Combine(Config.BaseDirectory, "tmp")).Result;
                 }
-                if (item.modules.module_dynamic.major?.article != null)
+                // 图文动态图片
+                if (item.modules.module_dynamic.major?.opus != null)
                 {
-                    _ = Helper.DownloadFile(item.modules.module_dynamic.major.article.covers[0],
-                        Path.Combine(Config.BaseDirectory, "tmp")).Result;
-                }
-
-                if (item.modules.module_dynamic?.desc?.rich_text_nodes != null)
-                {
-                    foreach (var i in item.modules.module_dynamic.desc.rich_text_nodes)
+                    foreach(var opusPic in item.modules.module_dynamic.major?.opus?.pics)
                     {
-                        _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+                        _ = Helper.DownloadFile(opusPic.url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
                     }
                 }
+                // 表情包
+                DynamicModel.Rich_Text_Nodes[] nodes = [];
+                if (item.modules.module_dynamic.desc != null)
+                {
+                    nodes = item.modules.module_dynamic.desc.rich_text_nodes ?? [];
+                }
+                else if (item.modules.module_dynamic.major != null)
+                {
+                    nodes = item.modules.module_dynamic.major.opus?.summary?.rich_text_nodes ?? [];
+                }
+                // TODO: other pattern
 
+                foreach (var i in nodes)
+                {
+                    _ = Helper.DownloadFile(i.emoji?.icon_url, Path.Combine(Config.BaseDirectory, "tmp")).Result;
+                }
+
+                // 热评的表情包
                 if (item.modules?.module_interaction?.items != null)
                 {
                     foreach (var i in item.modules.module_interaction.items)
@@ -198,15 +212,11 @@ namespace BilibiliMonitor.BilibiliAPI
                     }
                 }
 
-                int picCount = item.modules.module_dynamic.major?.draw?.items.Length ?? 0;
-                foreach (var i in item.modules.module_dynamic.major?.draw?.items ?? [])
-                {
-                    // 2图时，每图至少480px
-                    // 3图时，每图至少360px
-                    // 最小图片依照最大图片的尺寸, 缩放至原本大小, 后放置在容器中心
-                    // 1图时, 图片最大1000px, 容器随图片尺寸变化, 有最小宽度限制
-                    _ = Helper.DownloadFile(i.src, Path.Combine(Config.BaseDirectory, "tmp")).Result;
-                }
+                // 2图时，每图至少480px
+                // 3图时，每图至少360px
+                // 最小图片依照最大图片的尺寸, 缩放至原本大小, 后放置在容器中心
+                // 1图时, 图片最大1000px, 容器随图片尺寸变化, 有最小宽度限制
+                int picCount = item.modules.module_dynamic.major?.opus?.pics.Length ?? 0;
                 if (picCount <= 0)
                 {
                     CanvasWidth = CanvasMinWidth;
@@ -305,7 +315,7 @@ namespace BilibiliMonitor.BilibiliAPI
             {
                 case "DYNAMIC_TYPE_DRAW":
                     point = new(padding, point.Y + 10);
-                    DrawMajorImage(item.modules.module_dynamic.major.draw, ref main, ref point, padding);
+                    DrawMajorImage(item.modules.module_dynamic.major.opus, ref main, ref point, padding);
                     break;
 
                 case "DYNAMIC_TYPE_AV":
@@ -320,7 +330,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
                 case "DYNAMIC_TYPE_ARTICLE":
                     point = new(padding, point.Y + 10);
-                    DrawArticle(item.modules.module_dynamic.major.article, ref main, ref point, (int)(main.Width - padding * 2), padding);
+                    DrawArticle(item.modules.module_dynamic.major.opus, ref main, ref point, (int)(main.Width - padding * 2), padding);
                     break;
             }
 
@@ -478,15 +488,15 @@ namespace BilibiliMonitor.BilibiliAPI
             Updating = false;
         }
 
-        private void DrawArticle(DynamicModel.Article item, ref Painting img, ref SKPoint point, int elementWidth = 100, int padding = 10)
+        private void DrawArticle(DynamicModel.Opus item, ref Painting img, ref SKPoint point, int elementWidth = 100, int padding = 10)
         {
             var initPoint = new SKPoint(point.X, point.Y);
             int titleFontSize = 30;
             int bodyFontSize = 26;
-            using var cover = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.covers[0].GetFileNameFromURL()));
+            using var cover = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.pics[0].url.GetFileNameFromURL()));
             float imgHeight = cover.Height / (cover.Width / (elementWidth * 1.0f));
             var titleSize = img.MeasureString(item.title, titleFontSize);
-            var descSize = img.MeasureString(item.desc, bodyFontSize);
+            var descSize = img.MeasureString(item.summary.text, bodyFontSize);
             var frameHeight = imgHeight + titleSize.Height + (int)(descSize.Height * 3.5) + padding * 2;
             img.DrawRectangle(new SKRect { Left = point.X, Top = point.Y, Size = new SKSize { Width = elementWidth, Height = frameHeight } }, SKColors.White, new SKColor(229, 233, 239), 1);
             img.DrawImage(cover, new SKRect { Location = point, Size = new SKSize { Width = elementWidth, Height = imgHeight } });
@@ -495,7 +505,7 @@ namespace BilibiliMonitor.BilibiliAPI
             point = img.DrawRelativeText(item.title, new SKRect { Left = point.X, Right = point.X + elementWidth - padding, Bottom = initPoint.Y + frameHeight - padding }, point, SKColors.Black, titleFontSize);
             point = new(initPoint.X + padding, point.Y + bodyFontSize / 2);
 
-            point = img.DrawRelativeText(item.desc, new SKRect { Left = point.X, Right = point.X + elementWidth - padding, Bottom = initPoint.Y + frameHeight - padding }, point, new SKColor(102, 102, 102), bodyFontSize);
+            point = img.DrawRelativeText(item.summary.text, new SKRect { Left = point.X, Right = point.X + elementWidth - padding, Bottom = initPoint.Y + frameHeight - padding }, point, new SKColor(102, 102, 102), bodyFontSize);
 
             point = new SKPoint(initPoint.X, initPoint.Y + frameHeight + 5);
         }
@@ -532,7 +542,7 @@ namespace BilibiliMonitor.BilibiliAPI
             switch (item.type)
             {
                 case "DYNAMIC_TYPE_DRAW":
-                    DrawMajorImage(item.modules.module_dynamic.major.draw, ref main, ref p, 0);
+                    DrawMajorImage(item.modules.module_dynamic.major.opus, ref main, ref p, 0);
                     break;
 
                 case "DYNAMIC_TYPE_AV":
@@ -596,16 +606,20 @@ namespace BilibiliMonitor.BilibiliAPI
         /// <summary>
         /// 绘制图片元素
         /// </summary>
-        private void DrawMajorImage(DynamicModel.Draw item, ref Painting img, ref SKPoint point, int padding = 0)
+        private void DrawMajorImage(DynamicModel.Opus item, ref Painting img, ref SKPoint point, int padding = 0)
         {
             SKPoint initalPoint = new(point.X, point.Y);
 
-            int picCount = (int)(item?.items.Length);
+            int picCount = (int)(item?.pics.Length);
             int imgMaxWidth = 0;
-            if (picCount == 1)
+            if (picCount == 0)
             {
-                var i = item.items[0];
-                using var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), i.src.GetFileNameFromURL()));
+                //point = new(initalPoint.X, initalPoint.Y + 10);
+            }
+            else if (picCount == 1)
+            {
+                var i = item.pics[0];
+                using var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), i.url.GetFileNameFromURL()));
                 imgMaxWidth = (int)(img.Width - padding * 2);
                 int width = image.Width;
                 int height = image.Height;
@@ -615,7 +629,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     height = (int)(image.Height * (imgMaxWidth / (float)image.Width));
                 }
                 img.DrawImage(image, new SKRect { Location = point, Size = new(width, height) });
-                if (i.src.EndsWith(".gif"))
+                if (i.url.EndsWith(".gif"))
                 {
                     int paddingLeft = 4;
                     int paddingTop = 2;
@@ -632,7 +646,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 bool newLine = false;
                 for (int index = 1; index <= picCount; index++)
                 {
-                    var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.items[index - 1].src.GetFileNameFromURL()));
+                    var image = img.LoadImage(Path.Combine(Path.Combine(Config.BaseDirectory, "tmp"), item.pics[index - 1].url.GetFileNameFromURL()));
                     if (image.Width >= imgMaxWidth && image.Height >= imgMaxWidth)
                     {
                         // 缩小后，剪裁顶部
@@ -668,7 +682,7 @@ namespace BilibiliMonitor.BilibiliAPI
                         image = frame.SnapShot();
                     }
                     img.DrawImage(image, new SKRect { Location = point, Size = new(imgMaxWidth, imgMaxWidth) });
-                    if (item.items[index - 1].src.EndsWith(".gif"))
+                    if (item.pics[index - 1].url.EndsWith(".gif"))
                     {
                         int paddingLeft = 4;
                         int paddingTop = 2;
@@ -795,13 +809,24 @@ namespace BilibiliMonitor.BilibiliAPI
                 point = new(initalPoint.X, point.Y + bodyFontSize + 3 + 3);
             }
 
-            if (item.modules.module_dynamic.desc == null || item.modules.module_dynamic.desc?.rich_text_nodes.Length == 0)
+            DynamicModel.Rich_Text_Nodes[] nodes = [];
+            if (item.modules.module_dynamic.desc != null)
+            {
+                nodes = item.modules.module_dynamic.desc.rich_text_nodes ?? [];
+            }
+            else if (item.modules.module_dynamic.major!= null)
+            {
+                nodes = item.modules.module_dynamic.major.opus?.summary?.rich_text_nodes ?? [];
+            }
+            // TODO: other pattern
+
+            if (nodes.Length == 0)
             {
                 point.X = initalPoint.X;
                 return;
             }
 
-            foreach (var node in item.modules.module_dynamic.desc?.rich_text_nodes)
+            foreach (var node in nodes)
             {
                 switch (node.type)
                 {
