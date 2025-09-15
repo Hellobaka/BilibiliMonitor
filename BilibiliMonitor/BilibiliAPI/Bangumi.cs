@@ -21,9 +21,9 @@ namespace BilibiliMonitor.BilibiliAPI
             FetchInfo();
         }
 
-        public static event Action<Bangumi> OnBanguimiEnded;
+        public static event Action<Bangumi> OnBangumiEnded;
 
-        public static event Action<BangumiModel.DetailInfo, BangumiModel.Episode, string> OnBanguimiUpdated;
+        public static event Action<BangumiModel.DetailInfo, BangumiModel.Episode, string> OnBangumiUpdated;
 
         public BangumiModel.DetailInfo BangumiInfo { get; set; }
 
@@ -276,13 +276,13 @@ namespace BilibiliMonitor.BilibiliAPI
                         bangumi.ErrorCount = 0;
 
                         LogHelper.Info("番剧更新", $"{bangumi.Name} 更新了，路径={pic}");
-                        OnBanguimiUpdated?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
+                        OnBangumiUpdated?.Invoke(bangumi.BangumiInfo, bangumi.LastEp, pic);
                     }
                     if (bangumi.BangumiInfo.result.is_finish == "1")
                     {
                         LogHelper.Info("番剧完结", $"{bangumi.Name} 已完结，清除监测");
                         bangumi.Ended = true;
-                        OnBanguimiEnded?.Invoke(bangumi);
+                        OnBangumiEnded?.Invoke(bangumi);
                     }
                 }
                 catch (Exception exc)

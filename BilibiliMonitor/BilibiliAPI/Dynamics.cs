@@ -515,12 +515,12 @@ namespace BilibiliMonitor.BilibiliAPI
         /// </summary>
         private void DrawForward(DynamicModel.Item item, ref Painting img, ref SKPoint point)
         {
-            SKPoint initalPoint = new(point.X, point.Y);
+            SKPoint initialPoint = new(point.X, point.Y);
             if (item == null)
             {
                 return;
             }
-            // 转发模块双倍padding
+            // 转发模块双倍 padding
             int padding = 10;
             int width = CanvasWidth - padding * 4;
             int fontSize = 26;
@@ -550,10 +550,10 @@ namespace BilibiliMonitor.BilibiliAPI
                     break;
             }
 
-            img.DrawRectangle(new(initalPoint.X, initalPoint.Y, width + padding * 2 + initalPoint.X, p.Y + 20 + initalPoint.Y), new(244, 245, 247), SKColors.Black, 0);
+            img.DrawRectangle(new(initialPoint.X, initialPoint.Y, width + padding * 2 + initialPoint.X, p.Y + 20 + initialPoint.Y), new(244, 245, 247), SKColors.Black, 0);
             main.Resize((int)main.Width, (int)p.Y + 10);
-            img.DrawImage(main.SnapShot(), new SKRect { Location = new(initalPoint.X + 10, initalPoint.Y + 10), Size = new(main.Width, main.Height) });
-            point = new(initalPoint.X, initalPoint.Y + p.Y + 20 + 10);
+            img.DrawImage(main.SnapShot(), new SKRect { Location = new(initialPoint.X + 10, initialPoint.Y + 10), Size = new(main.Width, main.Height) });
+            point = new(initialPoint.X, initialPoint.Y + p.Y + 20 + 10);
             main.Dispose();
         }
 
@@ -569,7 +569,7 @@ namespace BilibiliMonitor.BilibiliAPI
             int padding = 10;
             int fontSize = 20;
             int iconSize = 24;
-            SKPoint initalPoint = new(point.X, point.Y);
+            SKPoint initialPoint = new(point.X, point.Y);
             point = new(point.X + padding, point.Y + 10);
 
             using var comment = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
@@ -581,7 +581,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     case "RICH_TEXT_NODE_TYPE_TEXT":
                     case "RICH_TEXT_NODE_TYPE_AT":
-                        point = img.DrawText(node.text.Replace("\r", " ").Replace("\n", " "), new SKRect { Left = initalPoint.X + padding + 16 + 8, Right = CanvasWidth - padding }, point, SKColor.Parse("#6d757a"), fontSize);
+                        point = img.DrawText(node.text.Replace("\r", " ").Replace("\n", " "), new SKRect { Left = initialPoint.X + padding + 16 + 8, Right = CanvasWidth - padding }, point, SKColor.Parse("#6d757a"), fontSize);
                         point = new SKPoint(point.X, point.Y - fontSize);
 
                         break;
@@ -598,9 +598,9 @@ namespace BilibiliMonitor.BilibiliAPI
                         break;
                 }
             }
-            img.DrawRectangle(new SKRect { Location = new(initalPoint.X , initalPoint.Y + 10), Size = new(2, point.Y - initalPoint.Y - 10 + fontSize + 5) }, SKColor.Parse("#e7e7e7"), SKColors.Black, 0);
+            img.DrawRectangle(new SKRect { Location = new(initialPoint.X , initialPoint.Y + 10), Size = new(2, point.Y - initialPoint.Y - 10 + fontSize + 5) }, SKColor.Parse("#e7e7e7"), SKColors.Black, 0);
 
-            point = new(initalPoint.X, point.Y + fontSize + 5);
+            point = new(initialPoint.X, point.Y + fontSize + 5);
         }
 
         /// <summary>
@@ -608,13 +608,13 @@ namespace BilibiliMonitor.BilibiliAPI
         /// </summary>
         private void DrawMajorImage(DynamicModel.Opus item, ref Painting img, ref SKPoint point, int padding = 0)
         {
-            SKPoint initalPoint = new(point.X, point.Y);
+            SKPoint initialPoint = new(point.X, point.Y);
 
             int picCount = (int)(item?.pics.Length);
             int imgMaxWidth = 0;
             if (picCount == 0)
             {
-                //point = new(initalPoint.X, initalPoint.Y + 10);
+                //point = new(initialPoint.X, initialPoint.Y + 10);
             }
             else if (picCount == 1)
             {
@@ -638,7 +638,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     img.DrawRectangle(new SKRect { Location = new(textPoint.X - paddingLeft, textPoint.Y - paddingTop), Size = new(textSize.Width + paddingLeft * 2, textSize.Height + paddingTop * 2) }, new SKColor(0, 0, 0, 0xBB), SKColors.Black, 0);
                     img.DrawText("动图", Painting.Anywhere, textPoint, SKColors.White, 14);
                 }
-                point = new(initalPoint.X, point.Y + height + 10);
+                point = new(initialPoint.X, point.Y + height + 10);
             }
             else
             {
@@ -695,17 +695,17 @@ namespace BilibiliMonitor.BilibiliAPI
                     if (picCount == 4)
                     {
                         newLine = index % 2 == 0;
-                        point = index % 2 == 0 ? new(initalPoint.X, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
+                        point = index % 2 == 0 ? new(initialPoint.X, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
                     }
                     else
                     {
                         newLine = index % 3 == 0;
-                        point = index % 3 == 0 ? new(initalPoint.X, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
+                        point = index % 3 == 0 ? new(initialPoint.X, point.Y + imgMaxWidth + 10) : new(point.X + imgMaxWidth + 10, point.Y);
                     }
                 }
                 if (!newLine)
                 {
-                    point = new SKPoint(initalPoint.X, point.Y + imgMaxWidth + 10);
+                    point = new SKPoint(initialPoint.X, point.Y + imgMaxWidth + 10);
                 }
             }
         }
@@ -721,7 +721,7 @@ namespace BilibiliMonitor.BilibiliAPI
             }
             int iconSize = 20;
             int fontSize = 20;
-            SKPoint initalPoint = new(point.X, point.Y);
+            SKPoint initialPoint = new(point.X, point.Y);
             point = new(point.X, point.Y + fontSize);
             using var forward = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "forward.png"));
             using var comment = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "comment.png"));
@@ -793,7 +793,7 @@ namespace BilibiliMonitor.BilibiliAPI
         /// </summary>
         private void RenderRichText(DynamicModel.Item item, ref Painting img, ref SKPoint point, int elementWidth, int padding = 14)
         {
-            SKPoint initalPoint = new(point.X, point.Y);
+            SKPoint initialPoint = new(point.X, point.Y);
 
             if (item == null)
             {
@@ -803,10 +803,10 @@ namespace BilibiliMonitor.BilibiliAPI
             if (item.modules.module_dynamic.topic != null)
             {
                 using var topic = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
-                img.DrawImage(topic, new SKRect { Location = initalPoint, Size = new() { Width = bodyFontSize, Height = bodyFontSize } });
+                img.DrawImage(topic, new SKRect { Location = initialPoint, Size = new() { Width = bodyFontSize, Height = bodyFontSize } });
                 point = new(point.X + bodyFontSize + 4, point.Y - 3);
                 img.DrawText(item.modules.module_dynamic.topic.name, Painting.Anywhere, point, new SKColor(0, 138, 197), bodyFontSize);
-                point = new(initalPoint.X, point.Y + bodyFontSize + 3 + 3);
+                point = new(initialPoint.X, point.Y + bodyFontSize + 3 + 3);
             }
 
             DynamicModel.Rich_Text_Nodes[] nodes = [];
@@ -822,7 +822,7 @@ namespace BilibiliMonitor.BilibiliAPI
 
             if (nodes.Length == 0)
             {
-                point.X = initalPoint.X;
+                point.X = initialPoint.X;
                 return;
             }
 
@@ -831,7 +831,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 switch (node.type)
                 {
                     case "RICH_TEXT_NODE_TYPE_TEXT":
-                        point = img.DrawText(node.text, new SKRect { Left = initalPoint.X, Right = elementWidth - padding }, point, SKColors.Black, bodyFontSize);
+                        point = img.DrawText(node.text, new SKRect { Left = initialPoint.X, Right = elementWidth - padding }, point, SKColors.Black, bodyFontSize);
                         point.Y -= bodyFontSize;
                         break;
 
@@ -877,7 +877,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 }
             }
 
-            point = new(initalPoint.X, point.Y + bodyFontSize + 3);
+            point = new(initialPoint.X, point.Y + bodyFontSize + 3);
         }
     }
 }
