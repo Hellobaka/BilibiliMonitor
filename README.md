@@ -9,8 +9,8 @@ config.LoadConfig();
 
 Dynamics.OnDynamicUpdated += OnDynamicUpdated;
 LiveStreams.OnLiveStreamUpdated += OnLiveStreamUpdated;
-Bangumi.OnBanguimiUpdated += OnBanguimiUpdated;
-Bangumi.OnBanguimiEnded += OnBanguimiEnded;
+Bangumi.OnBangumiUpdated += OnBanguimiUpdated;
+Bangumi.OnBangumiEnded += OnBanguimiEnded;
 
 private void OnDynamicUpdated(DynamicModel.Item item, long uid, string picPath)
 {
