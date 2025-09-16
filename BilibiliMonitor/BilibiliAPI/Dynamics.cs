@@ -800,6 +800,11 @@ namespace BilibiliMonitor.BilibiliAPI
                 return;
             }
             int bodyFontSize = 26;
+            if (item.modules.module_dynamic.major?.opus?.title != null)
+            {
+                img.DrawText(item.modules.module_dynamic.major?.opus?.title, Painting.Anywhere, point, SKColors.Black, bodyFontSize, isBold: true);
+                point = new(initialPoint.X, point.Y + bodyFontSize + 10);
+            }
             if (item.modules.module_dynamic.topic != null)
             {
                 using var topic = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
