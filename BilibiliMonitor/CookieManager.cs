@@ -239,7 +239,7 @@ namespace BilibiliMonitor
                     throw new WebException($"Request Error, code = {code}, msg = {j["message"]}");
                 }
                 refreshToken = j["data"]["refresh_token"].ToString();
-                LogHelper.Info("RefreshCookie", $"Update RefreshToken={refreshToken}", false);
+                LogHelper.Info("RefreshCookie", $"Update RefreshToken={refreshToken}");
 
                 foreach (var item in webClient.ResponseHeaders.AllKeys.Where(x => x == "Set-Cookie"))
                 {
