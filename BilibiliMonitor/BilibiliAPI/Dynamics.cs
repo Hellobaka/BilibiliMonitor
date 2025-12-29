@@ -360,8 +360,8 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             string url = string.Format(BaseUrl, UID);
-            string text = Helper.Get(url, CookieManager.GetCurrentCookie()).Result;
-            //string text = File.ReadAllText(@"E:\DO\dy.txt");
+            string text = Helper.Get(url, CookieManager.GetCurrentCookie(), $"https://space.bilibili.com/{UID}/dynamic").Result;
+            //string text = File.ReadAllText(@"dy.txt");
             DynamicModel.Main json = null;
             try
             {
@@ -800,7 +800,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 return;
             }
             int bodyFontSize = 26;
-            if (item.modules.module_dynamic.major?.opus?.title != null)
+            if (!string.IsNullOrWhiteSpace(item.modules.module_dynamic.major?.opus?.title))
             {
                 img.DrawText(item.modules.module_dynamic.major?.opus?.title, Painting.Anywhere, point, SKColors.Black, bodyFontSize, isBold: true);
                 point = new(initialPoint.X, point.Y + bodyFontSize + 10);
@@ -808,7 +808,7 @@ namespace BilibiliMonitor.BilibiliAPI
             if (item.modules.module_dynamic.topic != null)
             {
                 using var topic = img.LoadImage(Path.Combine(Config.BaseDirectory, "Assets", "topic.png"));
-                img.DrawImage(topic, new SKRect { Location = initialPoint, Size = new() { Width = bodyFontSize, Height = bodyFontSize } });
+                img.DrawImage(topic, new SKRect { Location = point, Size = new() { Width = bodyFontSize, Height = bodyFontSize } });
                 point = new(point.X + bodyFontSize + 4, point.Y - 3);
                 img.DrawText(item.modules.module_dynamic.topic.name, Painting.Anywhere, point, new SKColor(0, 138, 197), bodyFontSize);
                 point = new(initialPoint.X, point.Y + bodyFontSize + 3 + 3);

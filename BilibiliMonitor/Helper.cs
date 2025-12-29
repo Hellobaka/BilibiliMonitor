@@ -14,7 +14,7 @@ namespace BilibiliMonitor
     public static class Helper
     {
         public static long TimeStamp => (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-        public static string UA { get; set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.62";
+        public static string UA { get; set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
 
         public static bool CompareNumString(string a, string b)
         {
@@ -69,7 +69,7 @@ namespace BilibiliMonitor
             }
         }
 
-        public static async Task<string> Get(string url, string cookie = "")
+        public static async Task<string> Get(string url, string cookie = "", string referer = "")
         {
             try
             {
@@ -96,6 +96,10 @@ namespace BilibiliMonitor
 
                 using var http = new HttpClient(handler);
                 http.DefaultRequestHeaders.Add("user-agent", UA);
+                if (!string.IsNullOrEmpty(referer))
+                {
+                    http.DefaultRequestHeaders.Add("Referer", referer);
+                }
                 var r = await http.GetAsync(url);
                 r.Content.Headers.ContentType.CharSet = "UTF-8";
                 return await r.Content.ReadAsStringAsync();
