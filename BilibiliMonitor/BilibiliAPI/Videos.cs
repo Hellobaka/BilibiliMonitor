@@ -174,7 +174,7 @@ namespace BilibiliMonitor.BilibiliAPI
                     }
                 }
                 url = url.Replace(" ", "").Replace("\r", "").Replace("\n", "");
-                url = url.Split('?').First();
+                url = url.Split('?').First().Split('\\').First().Split('"').First();
 
                 if (url.StartsWith("http") is false)
                 {
