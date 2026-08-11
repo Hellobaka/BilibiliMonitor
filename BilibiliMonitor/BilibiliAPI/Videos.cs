@@ -156,10 +156,10 @@ namespace BilibiliMonitor.BilibiliAPI
             }
 
             url = url.Trim();
+            url = url.Replace("\\", "");
             //LogHelper.Info("视频解析", url);
             if (url.Contains("b23.tv") || url.Contains("bili2233.cn"))
             {
-                url = url.Replace("\\", "");
                 var match = Regex.Match(url, "b23\\.tv/.*");
                 if (match.Success)
                 {
@@ -196,7 +196,7 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     vid = vid.Substring(2);
                 }
-                vid = vid.Split('?').First();
+                vid = vid.Split('?').First().Split('\\').First().Split('"').First().Split('[').First();
                 return vid;
             }
             else
