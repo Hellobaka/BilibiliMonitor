@@ -24,7 +24,7 @@ namespace BilibiliMonitor.BilibiliAPI
             FetchUserInfo();
         }
 
-        public static event Action<LiveStreamsModel.RoomInfo, LiveStreamsModel.UserInfo, string> OnLiveStreamUpdated;
+        public static event Action<LiveStreamsModel.RoomInfo, LiveStreamsModel.UserInfo, bool, string> OnLiveStreamUpdated;
 
         public int ErrorCount { get; set; }
 
@@ -43,6 +43,8 @@ namespace BilibiliMonitor.BilibiliAPI
         public List<long> UsedID { get; set; } = [];
 
         public LiveStreamsModel.UserInfo UserInfo { get; set; }
+
+        public DateTime StreamStartTime { get; set; }
 
         private static List<LiveStreams> CheckItems { get; set; } = [];
 
@@ -190,7 +192,13 @@ namespace BilibiliMonitor.BilibiliAPI
                     StreamingStatus = json.data.live_status;
                     if (Streaming)
                     {
+                        StreamStartTime = DateTime.Now;
                         LogHelper.Info("直播状态变更", $"开播了，{Name} - {RoomInfo.title}");
+                        return true;
+                    }
+                    else
+                    {
+                        LogHelper.Info("直播状态变更", $"下播了，{Name}");
                         return true;
                     }
                 }
@@ -256,14 +264,26 @@ namespace BilibiliMonitor.BilibiliAPI
                 {
                     if (live.FetchRoomInfo())
                     {
-                        live.DownloadPics();
-                        string pic = live.DrawLiveStreamPic();
-                        GC.Collect();
-                        live.ReFetchFlag = false;
-                        live.ErrorCount = 0;
+                        string info;
+                        if (live.Streaming)
+                        {
+                            live.DownloadPics();
+                            info = live.DrawLiveStreamPic();
+                            GC.Collect();
+                            live.ReFetchFlag = false;
+                            live.ErrorCount = 0;
 
-                        LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={pic}");
-                        OnLiveStreamUpdated?.Invoke(live.RoomInfo, live.UserInfo, pic);
+                            LogHelper.Info("开播", $"{live.UserInfo.info.uname}开播了，路径={info}");
+                        }
+                        else
+                        {
+                            live.ReFetchFlag = false;
+                            live.ErrorCount = 0;
+                            var duration = DateTime.Now - live.StreamStartTime;
+                            info = $"本次直播时长：{(int)duration.TotalHours:00}小时{duration.Minutes:00}分钟{duration.Seconds:00}秒";
+                            LogHelper.Info("下播", $"{live.UserInfo.info.uname}下播了");
+                        }
+                        OnLiveStreamUpdated?.Invoke(live.RoomInfo, live.UserInfo, live.Streaming, info);
                     }
                 }
                 catch (Exception exc)
